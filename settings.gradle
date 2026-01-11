@@ -1,3 +1,15 @@
+
+pluginManagement {
+	repositories {
+		maven {
+			name = 'Fabric'
+			url = 'https://maven.fabricmc.net/'
+		}
+
+		mavenCentral()
+		gradlePluginPortal()
+	}
+}
 plugins {
     id("com.gradle.enterprise") version("3.16.2")
 }
@@ -10,15 +22,4 @@ gradleEnterprise {
             termsOfServiceAgree = "yes"
         }
     }
-}
-pluginManagement {
-	repositories {
-		maven {
-			name = 'Fabric'
-			url = 'https://maven.fabricmc.net/'
-		}
-
-		mavenCentral()
-		gradlePluginPortal()
-	}
 }
