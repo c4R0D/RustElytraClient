@@ -1,0 +1,33 @@
+{
+	"schemaVersion": 1,
+	"id": "rust-elytra-client",
+	"version": "${version}",
+	"name": "RST testMod",
+	"description": "Rust Elytra Client!",
+	"authors": [
+		"RSTminecraft"
+	],
+	"contact": {
+		"homepage": "https://elytra.rust3c.top/",
+		"sources": "https://github.com/c4R0D/RST-elytra"
+	},
+	"license": "GPLv3",
+	"icon": "assets/rst-testmod/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"dev.rstminecraft.RustElytraClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.16.0",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*",
+		"baritone-meteor" : "*"
+
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
