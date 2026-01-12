@@ -132,6 +132,8 @@ class RSTElytraTask {
         // 玩家掉落在地上时自动起跳，继续鞘翅飞行
         if (!arrived && !isJumping && !isJumpBlockedByBlock && !isEating && client.player.isOnGround() && !client.player.isFallFlying() && !client.player.isInLava() && client.player.getVelocity().getX() < 0.01 && client.player.getVelocity().getZ() < 0.01) {
             List<BlockPos> bp = getPotentialJumpBlockingBlocks(1);
+            if (jumpingTimes > 4)
+                client.player.setHeadYaw(client.player.getHeadYaw() + 180);
             if (!bp.isEmpty()) {
                 // 玩家头顶有方块阻挡，调用baritone API清除
                 isJumpBlockedByBlock = true;
