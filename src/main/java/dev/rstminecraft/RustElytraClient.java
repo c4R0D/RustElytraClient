@@ -46,9 +46,8 @@ import static dev.rstminecraft.RSTTask.tick;
 
 public class RustElytraClient implements ClientModInitializer {
 
-
     static final int DEFAULT_SEGMENT_LENGTH = 140000; // 每段路径长度
-
+    static RSTMsgSender MsgSender;
     static @NotNull ModStatuses ModStatus = ModStatuses.idle;
     static int currentTick = 0;
 
@@ -72,7 +71,7 @@ public class RustElytraClient implements ClientModInitializer {
                 client.player.networkHandler.onDisconnect(new DisconnectS2CPacket(text));
             }
         } else if (client.player != null) {
-            client.player.sendMessage(Text.literal("§4任务结束。" + str + "§r"), false);
+            MsgSender.SendMsg(client.player, "任务结束。" + str, MsgLevel.fatal);
         }
         ModStatus = ModStatuses.idle;
 
@@ -264,7 +263,6 @@ public class RustElytraClient implements ClientModInitializer {
                     taskFailed(client, isAutoLog, "飞行任务失败！null异常！", isAutoLogOnSeg1, nowIndex);
                     return;
                 }
-                client.player.sendMessage(Text.literal("elytra任务创建！"), false);
                 // 鞘翅守护任务
                 scheduleTask((self, args) -> {
                     if (client.player == null) {
@@ -276,7 +274,7 @@ public class RustElytraClient implements ClientModInitializer {
                         ModStatus = ModStatuses.idle;
                         self.repeatTimes = 0;
                         BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("stop");
-                        client.player.sendMessage(Text.literal("任务取消"), false);
+                        MsgSender.SendMsg(client.player,"任务取消",MsgLevel.warning);
                         return;
                     }
                     boolean result = BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().isActive();
@@ -292,12 +290,12 @@ public class RustElytraClient implements ClientModInitializer {
                                 || AutoEating(client, nowIndex, self)// 自动进食
                         ) return;
                         // 下界荒地怪物较少，提前降落领取补给
-                        if (!arrived && (client.player.getBlockPos().isWithinDistance(segments.get(nowIndex), 3500) || noFirework) && Objects.equals(client.world.getBiome(client.player.getBlockPos()).getKey().map(RegistryKey::getValue).orElse(null), Identifier.of("minecraft", "nether_wastes"))) {
+                        if (!arrived && (client.player.getBlockPos().isWithinDistance(segments.get(nowIndex), 3500) || noFirework) && Objects.equals(client.world.getBiome(client.player.getBlockPos()).getKey().map(RegistryKey::getValue).orElse(null), Identifier.of("minecraft", "nether_wastes")) && !client.player.isOnFire()) {
                             scheduleTask((s6, a6) -> {
                                 if (client.player != null)
                                     BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().pathTo(client.player.getBlockPos());
                             }, 1, 0, 15, 1000);
-                            client.player.sendMessage(Text.literal("位于下界荒地，提前降落！"), false);
+                            MsgSender.SendMsg(client.player,"位于下界荒地，提前降落！",MsgLevel.tip);
                             arrived = true;
                         }
                     }
@@ -358,14 +356,15 @@ public class RustElytraClient implements ClientModInitializer {
             switch (ModStatus) {
                 case failed -> {
                     // 补给失败
-                    client.player.sendMessage(Text.literal("补给任务失败"), false);
+                    MsgSender.SendMsg(client.player,"补给任务失败",MsgLevel.fatal);
                     taskFailed(client, isAutoLog, "补给任务失败！自动退出！", isAutoLogOnSeg1, nowIndex - 1);
                     self.repeatTimes = 0;
                 }
                 case success -> {
                     // 补给成功，继续飞行
-                    client.player.sendMessage(Text.literal("补给任务成功:" + nowIndex), false);
-                    client.player.sendMessage(Text.literal("进行下一段飞行任务：" + nowIndex), false);
+
+                    MsgSender.SendMsg(client.player,"补给任务成功:" + nowIndex,MsgLevel.info);
+                    MsgSender.SendMsg(client.player,"进行下一段飞行任务：" + nowIndex,MsgLevel.info);
                     self.repeatTimes = 0;
                     segmentsMainElytra(segments, nowIndex, client, isAutoLog, isAutoLogOnSeg1);
                 }
@@ -378,6 +377,7 @@ public class RustElytraClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         loadConfig(FabricLoader.getInstance().getConfigDir().resolve("RSTConfig.json"));
+        MsgSender = new RSTMsgSender(getBoolean("DisplayDebug", false) ? MsgLevel.debug : MsgLevel.info);
         // GUI按键注册
         openCustomScreenKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("RST Auto Elytra Mod主界面", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_R, "RST Auto Elytra Mod"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -405,10 +405,10 @@ public class RustElytraClient implements ClientModInitializer {
             int sl = getInt("SegLength", DEFAULT_SEGMENT_LENGTH);
             List<Vec3i> segments = calculatePathSegments(client, targetX, targetZ, sl);
             if (segments.isEmpty()) {
-                client.player.sendMessage(Text.literal("分段失败！"), false);
+                MsgSender.SendMsg(client.player, "分段失败！", MsgLevel.fatal);
                 return 0;
             }
-            client.player.sendMessage(Text.literal("任务开始！补给距离：" + sl), false);
+            MsgSender.SendMsg(client.player, "任务开始！补给距离：" + sl, MsgLevel.info);
             segmentsMainSupply(segments, 0, client, true, true);
             return 1;
         })))));

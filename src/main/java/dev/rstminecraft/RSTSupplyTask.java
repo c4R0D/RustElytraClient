@@ -24,7 +24,6 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.collection.DefaultedList;
@@ -40,6 +39,7 @@ import java.util.Objects;
 
 import static dev.rstminecraft.RSTTask.scheduleTask;
 import static dev.rstminecraft.RustElytraClient.ModStatus;
+import static dev.rstminecraft.RustElytraClient.MsgSender;
 
 class RSTSupplyTask {
 
@@ -189,12 +189,12 @@ class RSTSupplyTask {
             } else if (result == -2) {
                 self.repeatTimes = 0;
                 if (client.player != null) {
-                    client.player.sendMessage(Text.literal(ContainerName + "中没有符合条件的补给。"), false);
+                    MsgSender.SendMsg(client.player, ContainerName + "中没有符合条件的补给。", MsgLevel.error);
                 }
                 recall.accept(client, -1, recallArgs);
             } else if (self.repeatTimes == 0) {
                 if (client.player != null) {
-                    client.player.sendMessage(Text.literal(ContainerName + "中没有物品,或容器没有打开。"), false);
+                    MsgSender.SendMsg(client.player, ContainerName + "中没有物品,或容器没有打开。", MsgLevel.error);
                 }
                 recall.accept(client, -1, recallArgs);
             }
@@ -333,12 +333,12 @@ class RSTSupplyTask {
 
         // 没找到任何目标物品
         if (sb.isEmpty()) {
-            client.player.sendMessage(Text.literal(searchingName + "中没有目标物品。"), false);
+            MsgSender.SendMsg(client.player, searchingName + "中没有目标物品。", MsgLevel.debug);
         } else {
             String[] lines = sb.toString().split("\n");
             for (String line : lines) {
                 if (line == null || line.isEmpty()) continue;
-                client.player.sendMessage(Text.literal(line), false);
+                MsgSender.SendMsg(client.player, line, MsgLevel.debug);
             }
         }
 
@@ -393,7 +393,6 @@ class RSTSupplyTask {
                     for (int j = 0; j < 9; j++) {
                         ItemStack s = client.player.getInventory().getStack(j);
                         if (s.getItem() == Items.GOLDEN_CARROT) {
-                            client.player.sendMessage(Text.literal("找到！"), false);
                             client.interactionManager.clickSlot(screen.handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
                             client.interactionManager.clickSlot(screen.handler.syncId, 54 + j, 0, SlotActionType.PICKUP, client.player);
                             client.interactionManager.clickSlot(screen.handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
@@ -428,16 +427,15 @@ class RSTSupplyTask {
                 return;
             }
             if (client.player == null || client.interactionManager == null) {
-                client.inGameHud.getChatHud().addMessage(Text.literal("client.player或client.interactionManager为null!"));
                 ModStatus = RustElytraClient.ModStatuses.failed;
                 return;
             }
-            client.inGameHud.getChatHud().addMessage(Text.literal("尝试放置补给箱成功，现在打开补给箱"));
+            MsgSender.SendMsg(client.player, "尝试放置补给箱成功，现在打开补给箱", MsgLevel.tip);
             BlockHitResult chestHit = new BlockHitResult(Vec3d.ofCenter(targetPos), Direction.UP, targetPos, false);
             ActionResult result1 = client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, chestHit);
             client.player.swingHand(Hand.MAIN_HAND);
             if (result1.isAccepted()) {
-                client.inGameHud.getChatHud().addMessage(Text.literal("打开补给箱成功"));
+                MsgSender.SendMsg(client.player, "打开补给箱成功", MsgLevel.tip);
                 scheduleTask((self1, args1) -> {
                     if (ModStatus == RustElytraClient.ModStatuses.canceled) {
                         ModStatus = RustElytraClient.ModStatuses.idle;
@@ -447,8 +445,7 @@ class RSTSupplyTask {
                     boolean result = putOutSupplyMain(client, searchingName);
                     if (result) {
                         self1.repeatTimes = 0;
-
-                        client.inGameHud.getChatHud().addMessage(Text.literal("取出补给物品成功"));
+                        MsgSender.SendMsg(client.player, "取出补给物品成功", MsgLevel.tip);
                         int count = 0;
                         PlayerInventory inventory = client.player.getInventory();
                         for (int i = 0; i < inventory.main.size(); i++) {
@@ -459,7 +456,7 @@ class RSTSupplyTask {
                             }
                         }
                         if (client.world == null) {
-                            client.player.sendMessage(Text.literal("世界异常"));
+                            MsgSender.SendMsg(client.player, "世界异常", MsgLevel.error);
                             ModStatus = RustElytraClient.ModStatuses.failed;
                             return;
                         }
@@ -487,14 +484,14 @@ class RSTSupplyTask {
                                 if (newCount < finalCount + 1) {
                                     putTryTimes++;
                                     if (putTryTimes > 8) {
-                                        client.player.sendMessage(Text.literal("挖掘补给箱失败！"), false);
+                                        MsgSender.SendMsg(client.player, "挖掘补给箱失败！", MsgLevel.error);
                                         s.repeatTimes = 0;
                                         ModStatus = RustElytraClient.ModStatuses.failed;
                                     }
                                     return;
                                 }
 
-                                client.player.sendMessage(Text.literal("挖掘完毕，放回末影箱"), false);
+                                MsgSender.SendMsg(client.player, "挖掘完毕，放回末影箱", MsgLevel.tip);
 
                                 lookAt(client.player, Vec3d.ofCenter(enderChestPos));
                                 scheduleTask((ss, aa) -> {
@@ -512,7 +509,7 @@ class RSTSupplyTask {
                                     }
                                     BlockHitResult hitResult = new BlockHitResult(Vec3d.ofCenter(enderChestPos), Direction.UP, enderChestPos, false);
                                     if (client.interactionManager == null) {
-                                        client.player.sendMessage(Text.literal("client.interactionManager为null"), false);
+                                        MsgSender.SendMsg(client.player, "client.interactionManager为null", MsgLevel.error);
                                         ModStatus = RustElytraClient.ModStatuses.failed;
                                         s.repeatTimes = 0;
                                         return;
@@ -521,7 +518,7 @@ class RSTSupplyTask {
                                     client.player.swingHand(Hand.MAIN_HAND);
 
                                     if (result2.isAccepted()) {
-                                        client.player.sendMessage(Text.literal("打开末影箱完毕"), false);
+                                        MsgSender.SendMsg(client.player, "打开末影箱完毕", MsgLevel.tip);
                                         scheduleTask((s3, a3) -> {
                                             if (ModStatus == RustElytraClient.ModStatuses.canceled) {
                                                 s3.repeatTimes = 0;
@@ -530,7 +527,7 @@ class RSTSupplyTask {
                                             }
                                             //尝试放回末影箱
                                             if (putBackShulker(client, enderChestName, ShulkerSlot + 54, EnderChestShulkerSlot)) {
-                                                client.player.sendMessage(Text.literal("放回完毕"), false);
+                                                MsgSender.SendMsg(client.player, "放回完毕", MsgLevel.tip);
                                                 s3.repeatTimes = 0;
                                                 int enderCount = countItemInInventory(client.player, Items.ENDER_CHEST);
                                                 int obsidianCount = countItemInInventory(client.player, Items.OBSIDIAN);
@@ -545,13 +542,13 @@ class RSTSupplyTask {
                                                     }
                                                     int enderCount2 = countItemInInventory(client.player, Items.ENDER_CHEST);
                                                     if (!BaritoneAPI.getProvider().getPrimaryBaritone().getMineProcess().isActive() || enderCount2 > enderCount) {
-                                                        client.player.sendMessage(Text.literal("补给任务圆满完成！"), false);
+                                                        MsgSender.SendMsg(client.player, "补给任务圆满完成！", MsgLevel.tip);
                                                         BaritoneAPI.getProvider().getPrimaryBaritone().getMineProcess().cancel();
                                                         s2.repeatTimes = 0;
                                                         ModStatus = RustElytraClient.ModStatuses.success;
 
                                                     } else if (s2.repeatTimes == 0 || !client.player.getBlockPos().isWithinDistance(enderChestPos, 5)) {
-                                                        client.player.sendMessage(Text.literal("挖取末影箱失败！危险！"), false);
+                                                        MsgSender.SendMsg(client.player, "挖取末影箱失败！危险！", MsgLevel.error);
                                                         BaritoneAPI.getProvider().getPrimaryBaritone().getMineProcess().cancel();
                                                         s2.repeatTimes = 0;
                                                         ModStatus = RustElytraClient.ModStatuses.failed;
@@ -560,34 +557,34 @@ class RSTSupplyTask {
                                                 }, 1, 100, 0, 100);
 
                                             } else if (s3.repeatTimes == 0) {
-                                                client.player.sendMessage(Text.literal("放回异常"), false);
+                                                MsgSender.SendMsg(client.player, "放回异常", MsgLevel.error);
                                                 ModStatus = RustElytraClient.ModStatuses.failed;
                                             }
 
 
                                         }, 1, 20, 0, 80);
                                     } else {
-                                        client.player.sendMessage(Text.literal("打开失败"), false);
+                                        MsgSender.SendMsg(client.player, "打开失败", MsgLevel.error);
                                         ModStatus = RustElytraClient.ModStatuses.failed;
                                     }
                                 }, 1, 0, 3, 10000000);
                                 s.repeatTimes = 0;
                             } else if (s.repeatTimes == 0) {
-                                client.player.sendMessage(Text.literal("挖掘异常？取消挖掘"));
+                                MsgSender.SendMsg(client.player, "挖掘异常？取消挖掘", MsgLevel.error);
                                 BaritoneAPI.getProvider().getPrimaryBaritone().getMineProcess().cancel();
                                 ModStatus = RustElytraClient.ModStatuses.failed;
                             }
                         }, 1, 40, 1, 20);
 
                     } else if (self1.repeatTimes == 0) {
-                        client.player.sendMessage(Text.literal("补给物品取出失败！"));
+                        MsgSender.SendMsg(client.player, "补给物品取出失败！", MsgLevel.error);
                         ModStatus = RustElytraClient.ModStatuses.failed;
                     }
 
                 }, 1, 20, 1, 100, 0);
 
             } else {
-                client.inGameHud.getChatHud().addMessage(Text.literal("打开补给箱失败"));
+                MsgSender.SendMsg(client.player, "打开补给箱失败！", MsgLevel.error);
                 ModStatus = RustElytraClient.ModStatuses.failed;
             }
         }, 9, 0, 5, 100);
@@ -606,7 +603,7 @@ class RSTSupplyTask {
         Screen screen2 = client.currentScreen;
         if (!(screen2 instanceof HandledScreen<?> handled2)) {
             // 当前不是带处理器的 GUI（不是容器界面） -> 重置等待状态
-            player.sendMessage(Text.literal("窗口异常！"), false);
+            MsgSender.SendMsg(client.player, "窗口异常！", MsgLevel.warning);
             return false;
         }
 
@@ -680,7 +677,7 @@ class RSTSupplyTask {
             else if (s.getItem() == Items.GOLDEN_CARROT) goldenCarrotCount += s.getCount();
         }
         if (enderChestCount > 2 && pickaxe && sword && goldenCarrotCount > 15) return true;
-        client.player.sendMessage(Text.literal("没有足够的物资！"), false);
+        MsgSender.SendMsg(client.player, "没有足够的物资！", MsgLevel.error);
         return false;
     }
 
@@ -708,7 +705,7 @@ class RSTSupplyTask {
         if (Math.abs(delta.x) < 0.2 && Math.abs(delta.z) < 0.2) {
             task.repeatTimes = 0;
             client.options.forwardKey.setPressed(false);
-            client.inGameHud.getChatHud().addMessage(Text.literal("行走完成"));
+            MsgSender.SendMsg(client.player, "行走完成", MsgLevel.tip);
             scheduleTask((ss, aa) -> {
                 ClientPlayerEntity player = client.player;
                 if (player == null || client.interactionManager == null) {
@@ -732,7 +729,7 @@ class RSTSupplyTask {
                     }
                 }
                 if (slot == -1) {
-                    client.inGameHud.getChatHud().addMessage(Text.literal("快捷栏没有末影箱"));
+                    MsgSender.SendMsg(client.player, "快捷栏没有末影箱", MsgLevel.error);
                     ModStatus = RustElytraClient.ModStatuses.failed;
                     return;
                 }
@@ -740,13 +737,13 @@ class RSTSupplyTask {
                 // 找目标位置
                 BlockPos targetPos = findPlaceTarget(player);
                 if (targetPos == null) {
-                    client.inGameHud.getChatHud().addMessage(Text.literal("附近没有合适的位置放置末影箱"));
+                    MsgSender.SendMsg(client.player, "附近没有合适的位置放置末影箱", MsgLevel.error);
                     ModStatus = RustElytraClient.ModStatuses.failed;
                     return;
                 }
 
                 if (client.getNetworkHandler() == null) {
-                    client.inGameHud.getChatHud().addMessage(Text.literal("client.getNetworkHandler()为null"));
+                    MsgSender.SendMsg(client.player, "client.getNetworkHandler()为null", MsgLevel.error);
                     ModStatus = RustElytraClient.ModStatuses.failed;
                     return;
                 }
@@ -770,7 +767,7 @@ class RSTSupplyTask {
                     player.swingHand(Hand.MAIN_HAND);
 
                     if (result.isAccepted()) {
-                        client.inGameHud.getChatHud().addMessage(Text.literal("放置成功"));
+                        MsgSender.SendMsg(client.player, "放置成功", MsgLevel.tip);
                         scheduleTask((self, args) -> {
                             if (ModStatus == RustElytraClient.ModStatuses.canceled) {
                                 ModStatus = RustElytraClient.ModStatuses.idle;
@@ -781,12 +778,12 @@ class RSTSupplyTask {
                                 return;
                             }
                             player.swingHand(Hand.MAIN_HAND);
-                            client.inGameHud.getChatHud().addMessage(Text.literal("尝试放置末影箱成功，现在打开末影箱"));
+                            MsgSender.SendMsg(client.player, "尝试放置末影箱成功，现在打开末影箱", MsgLevel.tip);
                             BlockHitResult chestHit = new BlockHitResult(Vec3d.ofCenter(targetPos), Direction.UP, targetPos, false);
                             ActionResult result1 = client.interactionManager.interactBlock(player, Hand.MAIN_HAND, chestHit);
                             player.swingHand(Hand.MAIN_HAND);
                             if (result1.isAccepted()) {
-                                client.inGameHud.getChatHud().addMessage(Text.literal("打开容器成功:" + args[0]));
+                                MsgSender.SendMsg(client.player, "打开容器成功:" + args[0], MsgLevel.tip);
                                 // 现在在末影箱里寻找补给盒
                                 SearchShulkerInContainer((String) args[0], client, (cli, res, a1) -> {
                                     if (ModStatus == RustElytraClient.ModStatuses.canceled) {
@@ -794,20 +791,20 @@ class RSTSupplyTask {
                                         return;
                                     }
                                     if (res == -1) {
-                                        client.inGameHud.getChatHud().addMessage(Text.literal("寻找补给失败！"));
+                                        MsgSender.SendMsg(client.player, "寻找补给失败！", MsgLevel.error);
                                         ModStatus = RustElytraClient.ModStatuses.failed;
                                     } else {
                                         if (client.getNetworkHandler() == null || client.interactionManager == null) {
-                                            client.inGameHud.getChatHud().addMessage(Text.literal("client.getNetworkHandler()为null"));
+                                            MsgSender.SendMsg(client.player, "interactionManager为null！", MsgLevel.error);
                                             ModStatus = RustElytraClient.ModStatuses.failed;
                                             return;
                                         }
-                                        client.inGameHud.getChatHud().addMessage(Text.literal("寻找补给成功！"));
+                                        MsgSender.SendMsg(client.player, "寻找补给成功！", MsgLevel.tip);
                                         // 准备取出潜影盒
                                         RSTScreen screen = ContainerScreenChecker(client, (String) args[0], false);
                                         if (!screen.result) {
                                             // 不是目标容器
-                                            client.inGameHud.getChatHud().addMessage(Text.literal("界面异常！"));
+                                            MsgSender.SendMsg(client.player, "界面异常！", MsgLevel.error);
                                             ModStatus = RustElytraClient.ModStatuses.failed;
                                             return;
                                         }
@@ -825,7 +822,7 @@ class RSTSupplyTask {
                                             client.interactionManager.clickSlot(screen.handler.syncId, res, 0, SlotActionType.PICKUP, client.player);
                                             client.interactionManager.clickSlot(screen.handler.syncId, 54 + slot2, 0, SlotActionType.PICKUP, client.player);
                                             client.interactionManager.clickSlot(screen.handler.syncId, res, 0, SlotActionType.PICKUP, client.player);
-                                            client.inGameHud.getChatHud().addMessage(Text.literal("取出成功！"));
+                                            MsgSender.SendMsg(client.player, "取出成功！", MsgLevel.tip);
                                             screen.handled.close();
                                             int finalSlot = slot2;
 
@@ -837,7 +834,7 @@ class RSTSupplyTask {
                                                 // 找地方放置潜影盒
                                                 BlockPos targetPosShulker = findPlaceTarget(player);
                                                 if (targetPosShulker == null) {
-                                                    client.inGameHud.getChatHud().addMessage(Text.literal("附近没有合适的位置放置补给！"));
+                                                    MsgSender.SendMsg(client.player, "附近没有合适的位置放置补给！", MsgLevel.error);
                                                     ModStatus = RustElytraClient.ModStatuses.failed;
                                                     return;
                                                 }
@@ -859,7 +856,7 @@ class RSTSupplyTask {
                                                 Vec3d hitPosShulker = Vec3d.ofCenter(supportShulker).add(0, 0.5, 0);
                                                 BlockHitResult hitResultShulker = new BlockHitResult(hitPosShulker, Direction.UP, supportShulker, false);
                                                 if (client.interactionManager == null) {
-                                                    client.inGameHud.getChatHud().addMessage(Text.literal("interactionManager为null"));
+                                                    MsgSender.SendMsg(client.player, "interactionManager为null！", MsgLevel.error);
                                                     ModStatus = RustElytraClient.ModStatuses.failed;
                                                 }
                                                 // 交互放置
@@ -867,15 +864,15 @@ class RSTSupplyTask {
                                                 player.swingHand(Hand.MAIN_HAND);
 
                                                 if (resultShulker.isAccepted()) {
-                                                    client.inGameHud.getChatHud().addMessage(Text.literal("放置补给成功"));
+                                                    MsgSender.SendMsg(client.player, "放置补给成功！", MsgLevel.tip);
                                                     putOutSupply(client, targetPosShulker, SearchingNameShulker, targetPos, finalContainerName1, finalSlot, res);
                                                 } else {
-                                                    client.inGameHud.getChatHud().addMessage(Text.literal("放置补给失败"));
+                                                    MsgSender.SendMsg(client.player, "放置补给失败！", MsgLevel.error);
                                                     ModStatus = RustElytraClient.ModStatuses.failed;
                                                 }
                                             }, 10, 0, 5, 50, slot2);
                                         } else {
-                                            client.inGameHud.getChatHud().addMessage(Text.literal("取出失败！可能由于界面异常或快捷栏没有合适位置放置补给！"));
+                                            MsgSender.SendMsg(client.player, "取出失败！可能由于界面异常或快捷栏没有合适位置放置补给！", MsgLevel.error);
                                             ModStatus = RustElytraClient.ModStatuses.failed;
                                         }
                                     }
@@ -883,13 +880,13 @@ class RSTSupplyTask {
 
                                 });
                             } else {
-                                client.inGameHud.getChatHud().addMessage(Text.literal("打开失败"));
+                                MsgSender.SendMsg(client.player, "打开失败", MsgLevel.error);
                                 ModStatus = RustElytraClient.ModStatuses.failed;
                             }
                         }, 9, 0, 5, 100, finalContainerName1);
 
                     } else {
-                        client.inGameHud.getChatHud().addMessage(Text.literal("放置失败"));
+                        MsgSender.SendMsg(client.player, "放置失败", MsgLevel.error);
                         ModStatus = RustElytraClient.ModStatuses.failed;
                     }
                 }, 1, 0, 3, 1000000);

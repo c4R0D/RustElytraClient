@@ -241,9 +241,9 @@ public class RSTScr extends Screen {
                     int sl = getInt("SegLength", DEFAULT_SEGMENT_LENGTH);
                     // 分段
                     List<Vec3i> segments = calculatePathSegments(client, x1, z1, sl);
-                    client.player.sendMessage(Text.literal("任务开始！补给距离：" + sl), false);
+                    MsgSender.SendMsg(client.player,"任务开始！补给距离：" + sl,MsgLevel.warning);
                     if (segments.isEmpty()) {
-                        client.player.sendMessage(Text.literal("分段失败！"), false);
+                        MsgSender.SendMsg(client.player,"分段失败！" + sl,MsgLevel.fatal);
                         return;
                     }
                     // 开始飞行
@@ -404,7 +404,7 @@ public class RSTScr extends Screen {
     // 设置屏幕
     private static class SettingsSrc extends Screen {
         // 四行一列
-        private static final int SettingsButtonsRow = 4;
+        private static final int SettingsButtonsRow = 5;
         private static final int SettingsButtonsCol = 1;
         private final Screen parent;
         private final int buttonWidth;
@@ -439,10 +439,13 @@ public class RSTScr extends Screen {
                 setInt("SegLength", sl);
                 SegLen = String.valueOf(getInt("SegLength", DEFAULT_SEGMENT_LENGTH));
                 if (client != null && client.player != null) {
-                    client.player.sendMessage(Text.literal("已将补给距离设为：" + sl), false);
+                    MsgSender.SendMsg(client.player,"已将补给距离设为：" + sl,MsgLevel.info);
 
                 }
-
+            }), new SrcButtonEntry("发送调试信息:" + (getBoolean("DisplayDebug", false) ? "开" : "关"), "是否发送调试信息", () -> {
+                setBoolean("DisplayDebug", !getBoolean("DisplayDebug", false));
+                MsgSender = new RSTMsgSender(getBoolean("DisplayDebug", false)?MsgLevel.debug:MsgLevel.info);
+                BuildButtons();
             })};
 
             SettingsWidget = EntryToWidget(SettingsEntry, SettingsButtonsRow, SettingsButtonsCol, buttonWidth, width, height, textRenderer);
@@ -469,17 +472,20 @@ public class RSTScr extends Screen {
                 int sl;
                 if (SegLen == null) return;
                 try {
-                    sl = Integer.parseInt(SegLen);  // 尝试将输入转换为整数
+                    sl = Integer.parseInt(SegLen);
                 } catch (NumberFormatException e) {
                     return;
                 }
                 setInt("SegLength", sl);
                 SegLen = String.valueOf(getInt("SegLength", DEFAULT_SEGMENT_LENGTH));
                 if (client != null && client.player != null) {
-                    client.player.sendMessage(Text.literal("已将补给距离设为：" + sl), false);
+                    MsgSender.SendMsg(client.player,"已将补给距离设为：" + sl,MsgLevel.info);
 
                 }
-
+            }), new SrcButtonEntry("发送调试信息:" + (getBoolean("DisplayDebug", false) ? "开" : "关"), "是否发送调试信息", () -> {
+                setBoolean("DisplayDebug", !getBoolean("DisplayDebug", false));
+                MsgSender = new RSTMsgSender(getBoolean("DisplayDebug", false)?MsgLevel.debug:MsgLevel.info);
+                BuildButtons();
             })};
 
             SettingsWidget = EntryToWidget(SettingsEntry, SettingsButtonsRow, SettingsButtonsCol, buttonWidth, width, height, textRenderer);

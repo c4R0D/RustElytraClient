@@ -34,6 +34,7 @@ public class RSTConfig {//    模组配置相关函数，模组配置采用.json
                 config.addProperty("isAutoLog", true);
                 config.addProperty("isAutoLogOnSeg1", false);
                 config.addProperty("SegLength", DEFAULT_SEGMENT_LENGTH);
+                config.addProperty("DisplayDebug", false);
                 saveConfig();
             }
         } catch (IOException e) {

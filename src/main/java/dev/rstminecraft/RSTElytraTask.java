@@ -13,7 +13,6 @@ import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
@@ -82,7 +81,7 @@ class RSTElytraTask {
     static void arrivedTarget(@NotNull MinecraftClient client, @NotNull List<Vec3i> segments, int nowIndex, @NotNull RSTTask self, BlockPos segPos) {
         if (client.player == null) return;
         if (client.player.getBlockPos().isWithinDistance(oldPos, 100)) {
-            client.player.sendMessage(Text.literal("距离异常！"), false);
+            MsgSender.SendMsg(client.player, "距离异常！", MsgLevel.fatal);
             taskFailed(client, isAutoLog, "飞行任务失败！距离异常！", isAutoLogOnSeg1, nowIndex);
             self.repeatTimes = 0;
             return;
@@ -91,10 +90,11 @@ class RSTElytraTask {
         arrived = true;
         if (nowIndex == segments.size() - 1) {
             BaritoneAPI.getSettings().logger.value = BaritoneAPI.getSettings().logger.defaultValue;
-            client.player.sendMessage(Text.literal("到达目的地！本段飞行距离：" + Math.sqrt(client.player.getBlockPos().getSquaredDistance(segPos))), false);
+            MsgSender.SendMsg(client.player, "到达目的地！本段飞行距离：" + Math.sqrt(client.player.getBlockPos().getSquaredDistance(segPos)), MsgLevel.info);
         } else {
-            client.player.sendMessage(Text.literal("到达阶段目的地：" + nowIndex + "本段飞行距离:" + Math.sqrt(client.player.getBlockPos().getSquaredDistance(segPos))), false);
-            client.player.sendMessage(Text.literal("开始下一段补给任务：" + (nowIndex + 1)), false);
+
+            MsgSender.SendMsg(client.player, "到达阶段目的地：" + nowIndex + "本段飞行距离:" + Math.sqrt(client.player.getBlockPos().getSquaredDistance(segPos)), MsgLevel.info);
+            MsgSender.SendMsg(client.player, "开始下一段补给任务：" + (nowIndex + 1), MsgLevel.info);
             scheduleTask((s3, a3) -> {
                 if (client.player == null || s3.repeatTimes == 0) {
                     taskFailed(client, isAutoLog, "开启补给任务失败！", isAutoLogOnSeg1, nowIndex);
@@ -123,7 +123,7 @@ class RSTElytraTask {
             return true;
         // 自动起跳次数过多，可能遭遇意外情况，auto log
         if (jumpingTimes > 7) {
-            client.player.sendMessage(Text.literal("自动起跳数量过多，可能是baritone异常！"), false);
+            MsgSender.SendMsg(client.player, "自动起跳数量过多，可能是baritone异常！", MsgLevel.fatal);
             taskFailed(client, isAutoLog, "飞行任务失败！自动退出！自动起跳数量过多，可能是baritone异常！", isAutoLogOnSeg1, nowIndex);
             self.repeatTimes = 0;
             return true;
@@ -152,8 +152,7 @@ class RSTElytraTask {
                         scheduleTask((s3, a3) -> isJumpBlockedByBlock = false, 1, 0, 10, 100000000);
                         jumpingTimes++;
                     } else if (s.repeatTimes == 0) {
-                        client.player.sendMessage(Text.literal("挖掘异常！"), false);
-
+                        MsgSender.SendMsg(client.player, "挖掘异常！", MsgLevel.fatal);
                         taskFailed(client, isAutoLog, "飞行任务失败！自动退出！挖掘异常！", isAutoLogOnSeg1, nowIndex);
                         self.repeatTimes = 0;
 
@@ -170,7 +169,7 @@ class RSTElytraTask {
             LastJumpingTick = currentTick;
             // 玩家暂时无法起跳，尝试使用烟花辅助起跳
             if (jumpingTimes > 4 && getPotentialJumpBlockingBlocks(8).isEmpty()) {
-                client.player.sendMessage(Text.literal("自动烟花起跳！" + jumpingTimes), false);
+                MsgSender.SendMsg(client.player, "自动烟花起跳！" + jumpingTimes, MsgLevel.tip);
                 client.player.setPitch(-90);
                 client.options.jumpKey.setPressed(true);
                 scheduleTask((ss, aa) -> client.options.jumpKey.setPressed(false), 1, 0, 1, 100000000);
@@ -193,8 +192,7 @@ class RSTElytraTask {
                                 if (s5.isEmpty() || s5.getItem() == Items.FIREWORK_ROCKET) slots = i;
                             }
                             if (slots == -1) {
-
-                                client.player.sendMessage(Text.literal("烟花异常！"), false);
+                                MsgSender.SendMsg(client.player, "烟花异常！", MsgLevel.fatal);
                                 taskFailed(client, isAutoLog, "飞行任务失败！自动退出！找不到烟花！", isAutoLogOnSeg1, nowIndex);
                                 self.repeatTimes = 0;
                                 return;
@@ -202,7 +200,7 @@ class RSTElytraTask {
                                 client.player.getInventory().selectedSlot = slots;
                                 client.getNetworkHandler().sendPacket(new UpdateSelectedSlotC2SPacket(slots));
                                 client.interactionManager.interactItem(client.player, Hand.MAIN_HAND);
-                                client.player.sendMessage(Text.literal("已使用烟花！"), false);
+                                MsgSender.SendMsg(client.player, "已使用烟花！", MsgLevel.tip);
                             }
                             isJumping = false;
                         }, 1, 0, 2, 25);
@@ -212,7 +210,7 @@ class RSTElytraTask {
 
 
             } else {
-                client.player.sendMessage(Text.literal("自动起跳！" + jumpingTimes), false);
+                MsgSender.SendMsg(client.player, "自动起跳！" + jumpingTimes, MsgLevel.tip);
                 client.player.setPitch(-30);
                 client.options.jumpKey.setPressed(true);
                 scheduleTask((s4, a4) -> {
@@ -263,7 +261,7 @@ class RSTElytraTask {
             scheduleTask((ss, aa) -> {
                 client.options.jumpKey.setPressed(false);
                 if (client.player != null && client.interactionManager != null) {
-                    client.player.sendMessage(Text.literal("位于岩浆中，已鞘翅打开"), false);
+                    MsgSender.SendMsg(client.player, "位于岩浆中，已鞘翅打开", MsgLevel.tip);
                     // 抬头
                     client.player.setPitch(-90);
                     PlayerInventory inv = client.player.getInventory();
@@ -275,8 +273,7 @@ class RSTElytraTask {
                         if (s.isEmpty() || s.getItem() == Items.FIREWORK_ROCKET) slots = i;
                     }
                     if (slots == -1) {
-
-                        client.player.sendMessage(Text.literal("烟花异常！"), false);
+                        MsgSender.SendMsg(client.player, "烟花异常！", MsgLevel.fatal);
                         taskFailed(client, isAutoLog, "飞行任务失败！自动退出！找不到烟花！", isAutoLogOnSeg1, nowIndex);
                         self.repeatTimes = 0;
                     } else {
@@ -286,7 +283,7 @@ class RSTElytraTask {
 
                         // 使用烟花
                         client.interactionManager.interactItem(client.player, Hand.MAIN_HAND);
-                        client.player.sendMessage(Text.literal("已使用烟花！"), false);
+                        MsgSender.SendMsg(client.player, "已使用烟花！", MsgLevel.tip);
 
                         // 延时检测是否逃离岩浆
                         scheduleTask((s4, a4) -> {
@@ -295,8 +292,7 @@ class RSTElytraTask {
                                 return;
                             }
                             if (client.player.isInLava()) {
-
-                                client.player.sendMessage(Text.literal("无法逃离岩浆！"), false);
+                                MsgSender.SendMsg(client.player, "无法逃离岩浆！", MsgLevel.fatal);
                                 taskFailed(client, isAutoLog, "飞行任务失败！自动退出！逃离岩浆失败！", isAutoLogOnSeg1, nowIndex);
                                 self.repeatTimes = 0;
                             }
@@ -324,13 +320,13 @@ class RSTElytraTask {
         // baritone寻路失败，等待重置状态或auto log
         if (SegFailed > 25) {
             if (SegFailed > 30) {
-                client.player.sendMessage(Text.literal("SegFailed！"), false);
+                MsgSender.SendMsg(client.player, "SegFailed！", MsgLevel.fatal);
                 taskFailed(client, isAutoLog, "飞行任务失败！自动退出！baritone寻路异常？！", isAutoLogOnSeg1, nowIndex);
                 self.repeatTimes = 0;
                 return true;
             } else if (waitReset) {
                 BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().resetState();
-                client.player.sendMessage(Text.literal("SegFailed！正在重置baritone!"), false);
+                MsgSender.SendMsg(client.player, "SegFailed！正在重置baritone!", MsgLevel.warning);
                 waitReset = false;
             }
         }
@@ -338,7 +334,7 @@ class RSTElytraTask {
         // 玩家是不是陷入了原地绕圈？尝试重置baritone或auto log
         if (currentTick % 1000 == 0) {
             if (LastPos != null && client.player.getBlockPos().isWithinDistance(LastPos, 25)) {
-                client.player.sendMessage(Text.literal("SegFailed！spin!"), false);
+                MsgSender.SendMsg(client.player, "SegFailed！spin!", MsgLevel.warning);
                 if (spinTimes > 4) {
                     taskFailed(client, isAutoLog, "飞行任务失败！自动退出！baritone寻路异常？！疑似原地转圈", isAutoLogOnSeg1, nowIndex);
                     self.repeatTimes = 0;
@@ -375,7 +371,7 @@ class RSTElytraTask {
             if (s.getItem() == Items.FIREWORK_ROCKET) count += s.getCount();
         }
         if (slots == 0) {
-            client.player.sendMessage(Text.literal("烟花异常！"), false);
+            MsgSender.SendMsg(client.player, "烟花异常！", MsgLevel.fatal);
             taskFailed(client, isAutoLog, "飞行任务失败！自动退出！任务栏没有空位放烟花了！", isAutoLogOnSeg1, nowIndex);
             self.repeatTimes = 0;
             return true;
@@ -385,7 +381,7 @@ class RSTElytraTask {
             Screen screen = client.currentScreen;
             if (!(screen instanceof HandledScreen<?> handled)) {
                 // 当前不是带处理器的 GUI（不是容器界面） -> 重置等待状态
-                client.player.sendMessage(Text.literal("窗口异常！"), false);
+                MsgSender.SendMsg(client.player, "窗口异常！", MsgLevel.fatal);
                 taskFailed(client, isAutoLog, "飞行任务失败！自动退出！窗口异常！", isAutoLogOnSeg1, nowIndex);
                 self.repeatTimes = 0;
                 return true;
@@ -421,10 +417,9 @@ class RSTElytraTask {
             if (c <= 128 && !noFirework) {
                 if (client.player.getBlockPos().isWithinDistance(segments.get(nowIndex), (getInt("SegLength", DEFAULT_SEGMENT_LENGTH) - 3500) * 0.6)) {
                     noFirework = true;
-                    client.player.sendMessage(Text.literal("烟花不足，提前寻找位置降落！"));
+                    MsgSender.SendMsg(client.player, "烟花不足，提前寻找位置降落！", MsgLevel.info);
                 } else {
-
-                    client.player.sendMessage(Text.literal("烟花不足，以飞行路程不足总路程60%，可能是baritone设置错误？请检查！"));
+                    MsgSender.SendMsg(client.player, "烟花不足，以飞行路程不足总路程60%，可能是baritone设置错误？请检查！", MsgLevel.fatal);
                     taskFailed(client, isAutoLog, "飞行任务失败！自动退出！烟花不足，以飞行路程不足总路程60%，可能是baritone设置错误？请检查！", isAutoLogOnSeg1, nowIndex);
                     self.repeatTimes = 0;
                     return true;
@@ -433,8 +428,8 @@ class RSTElytraTask {
             }
             // 统计玩家烟花消耗速度，调试用
             if (elytraCount != 0 && FireworkCount != 0 && LastDebugPos != null) {
-                client.player.sendMessage(Text.literal("目前鞘翅剩余耐久：" + d + "鞘翅预计可以飞行" + 2160.0 / (elytraCount - d) * Math.sqrt(client.player.getBlockPos().getSquaredDistance(LastDebugPos))));
-                client.player.sendMessage(Text.literal("目前烟花剩余数量：" + (c + count) + "烟花预计可以飞行" + 1344.0 / (FireworkCount - c - count) * Math.sqrt(client.player.getBlockPos().getSquaredDistance(LastDebugPos))));
+                MsgSender.SendMsg(client.player, "目前鞘翅剩余耐久：" + d + "鞘翅预计可以飞行" + 2160.0 / (elytraCount - d) * Math.sqrt(client.player.getBlockPos().getSquaredDistance(LastDebugPos)), MsgLevel.debug);
+                MsgSender.SendMsg(client.player, "目前烟花剩余数量：" + (c + count) + "烟花预计可以飞行" + 1344.0 / (FireworkCount - c - count) * Math.sqrt(client.player.getBlockPos().getSquaredDistance(LastDebugPos)), MsgLevel.debug);
             } else {
                 elytraCount = d;
                 FireworkCount = c + count;
@@ -457,7 +452,7 @@ class RSTElytraTask {
         int slot2 = -1;
         // 自动进食，恢复血量
         if (!isEating && !client.player.isInLava() && client.player.getVelocity().length() > 1.4 && (client.player.getHungerManager().getFoodLevel() < 16 || client.player.getHealth() < 15 && client.player.getHungerManager().getFoodLevel() < 20)) {
-            client.player.sendMessage(Text.literal("准备食用"), false);
+            MsgSender.SendMsg(client.player,"准备食用",MsgLevel.tip);
             for (int i = 0; i < 8; i++) {
                 ItemStack s = client.player.getInventory().getStack(i);
                 Item item = s.getItem();
@@ -467,7 +462,7 @@ class RSTElytraTask {
                 }
             }
             if (slot2 == -1) {
-                client.player.sendMessage(Text.literal("无食物了！！"), false);
+                MsgSender.SendMsg(client.player,"无食物了！！",MsgLevel.fatal);
                 taskFailed(client, isAutoLog, "飞行任务失败！自动退出！没有足够的食物了！", isAutoLogOnSeg1, nowIndex);
                 self.repeatTimes = 0;
                 return true;
@@ -485,7 +480,7 @@ class RSTElytraTask {
                     }
                     if (client.player.getVelocity().length() < 0.9) {
                         // 速度过低，放弃吃食物，防止影响baritone寻路
-                        client.player.sendMessage(Text.literal("放弃吃食物！！！"), false);
+                        MsgSender.SendMsg(client.player,"放弃吃食物！！！",MsgLevel.tip);
                         client.options.useKey.setPressed(false);
                         s5.repeatTimes = 0;
                         isEating = false;
