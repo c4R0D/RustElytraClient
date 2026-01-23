@@ -13,7 +13,6 @@ import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3i;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -296,127 +295,6 @@ public class RSTScr extends Screen {
                 client.setScreen(parent);
             }
         }
-
-    }
-
-    // 帮助屏幕
-    private static class HelperSrc extends Screen {
-        // 获取帮助图片
-        private static final String MOD_ID = "rust-elytra-client";
-        private static final Identifier shulkerExample = Identifier.of(MOD_ID, "shulker_example.png");
-        private static final Identifier page0 = Identifier.of(MOD_ID, "page0.png");
-        private static final Identifier page1 = Identifier.of(MOD_ID, "page1.png");
-        private static final Identifier page2 = Identifier.of(MOD_ID, "page2.png");
-        private static final Identifier page3 = Identifier.of(MOD_ID, "page3.png");
-        // 1行2列
-        private static final int HelperButtonsRow = 1;
-        private static final int HelperButtonsCol = 2;
-        private static final int maxPage = 3;
-        private final int buttonWidth;
-        private Screen parent;
-        private int pages = 0;
-        private ClickableWidget @NotNull [] HelperWidget = new ClickableWidget[HelperButtonsCol * HelperButtonsRow];
-
-        public HelperSrc(Screen parent) {
-            super(Text.literal("RST Auto Elytra Mod Helper Menu"));
-            this.parent = parent;
-            this.buttonWidth = Math.max(100, Math.min(300, (int) (this.width * 0.3)));
-        }
-
-        // 最后一页时,将“下一页”按钮改为“阅读完成”
-        private void change() {
-            for (ClickableWidget i : HelperWidget) {
-                remove(i);
-            }
-            ((SrcButtonEntry) HelperEntry[1]).text = "阅读完成";
-            HelperWidget = EntryToWidget(HelperEntry, HelperButtonsRow, HelperButtonsCol, buttonWidth, width, height, textRenderer);
-            for (ClickableWidget i : HelperWidget) {
-                addDrawableChild(i);
-            }
-
-        }
-
-        // 不是最后一页时,将“阅读完成”按钮改为“下一页”
-        private void changeBack() {
-            for (ClickableWidget i : HelperWidget) {
-                remove(i);
-            }
-            ((SrcButtonEntry) HelperEntry[1]).text = "下一页";
-            HelperWidget = EntryToWidget(HelperEntry, HelperButtonsRow, HelperButtonsCol, buttonWidth, width, height, textRenderer);
-            for (ClickableWidget i : HelperWidget) {
-                addDrawableChild(i);
-            }
-
-        }
-
-        @Override
-        protected void init() {
-            realInit();
-        }
-
-        private void realInit() {
-            // 将控件转换为屏幕组件
-            HelperWidget = EntryToWidget(HelperEntry, HelperButtonsRow, HelperButtonsCol, buttonWidth, width, height, textRenderer);
-            for (ClickableWidget i : HelperWidget) {
-                addDrawableChild(i);
-            }
-        }
-
-        @Override
-        public void render(@NotNull DrawContext context, int mouseX, int mouseY, float delta) {
-            super.render(context, mouseX, mouseY, delta);
-            realRender(context);
-        }
-
-        private void realRender(@NotNull DrawContext context) {
-            // 根据页数渲染图片
-            switch (pages) {
-                case 0 -> // 第一页
-                        context.drawTexture(page0, (int) (width * 0.125), 20, (int) (width * 0.75), (int) (width * 0.157), 0, 0, 634, 132, 634, 132);
-                case 1 -> // 第二页
-                        context.drawTexture(page1, (int) (width * 0.125), 20, (int) (width * 0.75), (int) (width * 0.205), 0, 0, 992, 272, 992, 272);
-                case 2 -> { // 第三页,两张图片
-                    context.drawTexture(page2, (int) (width * 0.125), 20, (int) (width * 0.75), (int) (width * 0.205), 0, 0, 1054, 212, 1054, 212);
-                    context.drawTexture(shulkerExample, (int) (width * 0.125), height / 2 + 30, (int) (width * 0.75), (int) (width * 0.285), 0, 0, 638, 247, 638, 247);
-                }
-                case 3 -> // 第四页
-                        context.drawTexture(page3, (int) (width * 0.125), 20, (int) (width * 0.75), (int) (width * 0.136), 0, 0, 1008, 184, 1008, 184);
-                default ->
-                        context.drawTextWithShadow(textRenderer, Text.literal("此页没有内容"), width / 2 - 40, height / 2 + 30, 0xFFFFFF);
-            }
-        }
-
-        @Override
-        public void close() {
-            if (client != null) {
-                client.setScreen(parent);
-            }
-        }
-
-        private final SrcEntry[] HelperEntry = {new SrcButtonEntry("上一页", "前往上一页指南", () -> {
-            if (pages == maxPage) {
-                // 最后一页
-                changeBack();
-            }
-            pages -= pages == 0 ? 0 : 1;
-        }) // 一个“上一页”按钮
-                , new SrcButtonEntry("下一页", "前往上一页指南或结束", () -> {
-            if (pages == maxPage - 1) {
-                // 最后一页
-                change();
-            }
-            if (pages == maxPage) {
-                // 阅读完成,退出
-                if (client != null) {
-                    client.setScreen(parent);
-                }
-            } else {
-                pages++;
-            }
-
-        })// 一个“下一页按钮”
-        };
-
 
     }
 
