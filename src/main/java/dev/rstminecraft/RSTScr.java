@@ -9,7 +9,10 @@ import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3i;
 import org.jetbrains.annotations.NotNull;
@@ -41,8 +44,24 @@ public class RSTScr extends Screen {
         }
     })// 一个“飞行菜单”按钮
             , new SrcButtonEntry("使用指南", "请按指南要求完成必要设置", () -> {
-        if (client != null) {
-            client.setScreen(new HelperSrc(client.currentScreen));
+        if (client != null && client.player != null) {
+            Text linkText = Text.literal("点击查看Mod指南")
+                    .styled(style -> style
+                            .withColor(Formatting.BLUE)
+                            .withUnderline(true)
+                            .withClickEvent(new ClickEvent(
+                                    ClickEvent.Action.OPEN_URL,
+                                    "https://elytra.rust3c.top/Rust%20Elytra%20Client%20v1.0.pdf"
+                            ))
+                            .withHoverEvent(new HoverEvent(
+                                    HoverEvent.Action.SHOW_TEXT,
+                                    Text.literal("打开PDF指南")
+                            ))
+                    );
+
+            client.player.sendMessage(linkText);
+            client.player.sendMessage(Text.literal("§4[Rust Elytra]pdf指南链接已经发到聊天框§r"),true);
+            client.setScreen(null);
         }
     })// 一个“帮助”按钮
     };
