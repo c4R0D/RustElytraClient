@@ -5,7 +5,13 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
 
+import static dev.rstminecraft.RustElytraClient.MODLOGGER;
+
 public class RSTMsgSender {
+    interface logLevel{
+        void log(String s);
+    }
+    private static final logLevel[] logger = {MODLOGGER::debug,MODLOGGER::debug,MODLOGGER::info,MODLOGGER::warn,MODLOGGER::error,MODLOGGER::error};
     private static final String[] LevelStr = {"§7[Rust Elytra]", "§7[Rust Elytra]", "§8[Rust Elytra]", "§6[Rust Elytra Warn]", "§4[Rust Elytra Error]", "§4§l[Rust Elytra Fatal]"};
     final MsgLevel DisplayLevel;
 
@@ -28,9 +34,11 @@ public class RSTMsgSender {
         if (level.ordinal() < DisplayLevel.ordinal()) {
             if (level == MsgLevel.tip)
                 player.sendMessage(Text.literal(LevelStr[level.ordinal()] + msg + "§r"), true);
+            logger[level.ordinal()].log("[Rust Elytra Log]" + msg);
             return;
         }
         player.sendMessage(Text.literal(LevelStr[level.ordinal()] + msg + "§r"), false);
+        logger[level.ordinal()].log("[Rust Elytra Log]" + msg);
     }
 
 

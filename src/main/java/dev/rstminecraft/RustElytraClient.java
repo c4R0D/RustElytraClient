@@ -33,6 +33,8 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -50,7 +52,7 @@ public class RustElytraClient implements ClientModInitializer {
     static RSTMsgSender MsgSender;
     static @NotNull ModStatuses ModStatus = ModStatuses.idle;
     static int currentTick = 0;
-
+    public static final Logger MODLOGGER = LoggerFactory.getLogger("rust-elytra-client");
 
     private static KeyBinding openCustomScreenKey;
 
