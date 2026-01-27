@@ -41,6 +41,7 @@ import java.util.*;
 import static com.mojang.text2speech.Narrator.LOGGER;
 import static dev.rstminecraft.RSTConfig.*;
 import static dev.rstminecraft.RSTElytraTask.*;
+import static dev.rstminecraft.RSTFireballProtect.FireballProtector;
 import static dev.rstminecraft.RSTSupplyTask.autoPlace;
 import static dev.rstminecraft.RSTTask.scheduleTask;
 import static dev.rstminecraft.RSTTask.tick;
@@ -48,12 +49,11 @@ import static dev.rstminecraft.RSTTask.tick;
 
 public class RustElytraClient implements ClientModInitializer {
 
+    public static final Logger MODLOGGER = LoggerFactory.getLogger("rust-elytra-client");
     static final int DEFAULT_SEGMENT_LENGTH = 140000; // 每段路径长度
     static RSTMsgSender MsgSender;
     static @NotNull ModStatuses ModStatus = ModStatuses.idle;
     static int currentTick = 0;
-    public static final Logger MODLOGGER = LoggerFactory.getLogger("rust-elytra-client");
-
     private static KeyBinding openCustomScreenKey;
 
     /**
@@ -276,7 +276,7 @@ public class RustElytraClient implements ClientModInitializer {
                         ModStatus = ModStatuses.idle;
                         self.repeatTimes = 0;
                         BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("stop");
-                        MsgSender.SendMsg(client.player,"任务取消",MsgLevel.warning);
+                        MsgSender.SendMsg(client.player, "任务取消", MsgLevel.warning);
                         return;
                     }
                     boolean result = BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().isActive();
@@ -297,7 +297,7 @@ public class RustElytraClient implements ClientModInitializer {
                                 if (client.player != null)
                                     BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().pathTo(client.player.getBlockPos());
                             }, 1, 0, 15, 1000);
-                            MsgSender.SendMsg(client.player,"位于下界荒地，提前降落！",MsgLevel.tip);
+                            MsgSender.SendMsg(client.player, "位于下界荒地，提前降落！", MsgLevel.tip);
                             arrived = true;
                         }
                     }
@@ -355,18 +355,25 @@ public class RustElytraClient implements ClientModInitializer {
                 ModStatus = ModStatuses.canceled;
                 return;
             }
+            if (!FireballProtector(client)) {
+                self.repeatTimes = 0;
+                BaritoneAPI.getProvider().getPrimaryBaritone().getMineProcess().cancel();
+                taskFailed(client, isAutoLog, "补给过程火球！紧急！", isAutoLogOnSeg1, nowIndex - 1);
+                ModStatus = ModStatuses.canceled;
+                return;
+            }
             switch (ModStatus) {
                 case failed -> {
                     // 补给失败
-                    MsgSender.SendMsg(client.player,"补给任务失败",MsgLevel.fatal);
+                    MsgSender.SendMsg(client.player, "补给任务失败", MsgLevel.fatal);
                     taskFailed(client, isAutoLog, "补给任务失败！自动退出！", isAutoLogOnSeg1, nowIndex - 1);
                     self.repeatTimes = 0;
                 }
                 case success -> {
                     // 补给成功，继续飞行
 
-                    MsgSender.SendMsg(client.player,"补给任务成功:" + nowIndex,MsgLevel.info);
-                    MsgSender.SendMsg(client.player,"进行下一段飞行任务：" + nowIndex,MsgLevel.info);
+                    MsgSender.SendMsg(client.player, "补给任务成功:" + nowIndex, MsgLevel.info);
+                    MsgSender.SendMsg(client.player, "进行下一段飞行任务：" + nowIndex, MsgLevel.info);
                     self.repeatTimes = 0;
                     segmentsMainElytra(segments, nowIndex, client, isAutoLog, isAutoLogOnSeg1);
                 }

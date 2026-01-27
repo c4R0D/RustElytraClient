@@ -37,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
+import static dev.rstminecraft.RSTFireballProtect.isHittingFireball;
 import static dev.rstminecraft.RSTTask.scheduleTask;
 import static dev.rstminecraft.RustElytraClient.ModStatus;
 import static dev.rstminecraft.RustElytraClient.MsgSender;
@@ -472,6 +473,8 @@ class RSTSupplyTask {
                                 s.repeatTimes = 0;
                                 return;
                             }
+                            if (isHittingFireball())
+                                s.repeatTimes = 40;
                             if (!BaritoneAPI.getProvider().getPrimaryBaritone().getMineProcess().isActive()) {
                                 int newCount = 0;
                                 for (int i = 0; i < inventory.main.size(); i++) {
@@ -540,6 +543,8 @@ class RSTSupplyTask {
                                                         BaritoneAPI.getProvider().getPrimaryBaritone().getMineProcess().cancel();
                                                         return;
                                                     }
+                                                    if (isHittingFireball())
+                                                        s.repeatTimes = 100;
                                                     int enderCount2 = countItemInInventory(client.player, Items.ENDER_CHEST);
                                                     if (!BaritoneAPI.getProvider().getPrimaryBaritone().getMineProcess().isActive() || enderCount2 > enderCount) {
                                                         MsgSender.SendMsg(client.player, "补给任务圆满完成！", MsgLevel.tip);
