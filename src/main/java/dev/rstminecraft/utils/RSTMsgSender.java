@@ -1,4 +1,4 @@
-package dev.rstminecraft;
+package dev.rstminecraft.utils;
 
 
 import net.minecraft.entity.player.PlayerEntity;
@@ -19,7 +19,7 @@ public class RSTMsgSender {
      *
      * @param DL 最低打印到聊天区的消息级别
      */
-    RSTMsgSender(MsgLevel DL) {
+    public RSTMsgSender(MsgLevel DL) {
         DisplayLevel = DL;
     }
 
@@ -30,7 +30,7 @@ public class RSTMsgSender {
      * @param msg 消息内容
      * @param level 消息级别
      */
-    void SendMsg(@NotNull PlayerEntity player, String msg, @NotNull MsgLevel level) {
+    public void SendMsg(@NotNull PlayerEntity player, String msg, @NotNull MsgLevel level) {
         if (level.ordinal() < DisplayLevel.ordinal()) {
             if (level == MsgLevel.tip)
                 player.sendMessage(Text.literal(LevelStr[level.ordinal()] + msg + "§r"), true);

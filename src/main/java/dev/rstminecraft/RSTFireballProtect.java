@@ -1,6 +1,7 @@
 package dev.rstminecraft;
 
 import baritone.api.BaritoneAPI;
+import dev.rstminecraft.utils.MsgLevel;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -16,7 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
-import static dev.rstminecraft.RSTTask.scheduleTask;
+import static dev.rstminecraft.utils.RSTTask.scheduleTask;
 import static dev.rstminecraft.RustElytraClient.MsgSender;
 
 class RSTFireballProtect {

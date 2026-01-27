@@ -10,6 +10,8 @@ package dev.rstminecraft;
 import baritone.api.BaritoneAPI;
 import baritone.api.utils.Helper;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import dev.rstminecraft.utils.MsgLevel;
+import dev.rstminecraft.utils.RSTMsgSender;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -39,21 +41,21 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static com.mojang.text2speech.Narrator.LOGGER;
-import static dev.rstminecraft.RSTConfig.*;
+import static dev.rstminecraft.utils.RSTConfig.*;
 import static dev.rstminecraft.RSTElytraTask.*;
 import static dev.rstminecraft.RSTFireballProtect.FireballProtector;
 import static dev.rstminecraft.RSTSupplyTask.autoPlace;
-import static dev.rstminecraft.RSTTask.scheduleTask;
-import static dev.rstminecraft.RSTTask.tick;
+import static dev.rstminecraft.utils.RSTTask.scheduleTask;
+import static dev.rstminecraft.utils.RSTTask.tick;
 
 
 public class RustElytraClient implements ClientModInitializer {
 
     public static final Logger MODLOGGER = LoggerFactory.getLogger("rust-elytra-client");
-    static final int DEFAULT_SEGMENT_LENGTH = 140000; // 每段路径长度
+    public static final int DEFAULT_SEGMENT_LENGTH = 140000; // 每段路径长度
     static RSTMsgSender MsgSender;
     static @NotNull ModStatuses ModStatus = ModStatuses.idle;
-    static int currentTick = 0;
+    public static int currentTick = 0;
     private static KeyBinding openCustomScreenKey;
 
     /**

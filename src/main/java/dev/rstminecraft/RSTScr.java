@@ -2,6 +2,8 @@ package dev.rstminecraft;
 
 //文件解释：本文件为模组GUI实现。
 
+import dev.rstminecraft.utils.MsgLevel;
+import dev.rstminecraft.utils.RSTMsgSender;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -19,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-import static dev.rstminecraft.RSTConfig.*;
+import static dev.rstminecraft.utils.RSTConfig.*;
 import static dev.rstminecraft.RustElytraClient.*;
 
 

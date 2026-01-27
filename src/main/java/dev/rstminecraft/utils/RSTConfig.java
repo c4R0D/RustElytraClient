@@ -1,4 +1,4 @@
-package dev.rstminecraft;
+package dev.rstminecraft.utils;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -22,7 +22,7 @@ public class RSTConfig {//    模组配置相关函数，模组配置采用.json
      *
      * @param configFile2 配置文件路径
      */
-    static void loadConfig(Path configFile2) {
+    public static void loadConfig(Path configFile2) {
         configFile = configFile2;
         try {
             if (Files.exists(configFile)) {
@@ -45,7 +45,7 @@ public class RSTConfig {//    模组配置相关函数，模组配置采用.json
     /**
      * 保存配置文件
      */
-    static private void saveConfig() {
+    public static void saveConfig() {
         try {
             Files.createDirectories(configFile.getParent());
             Files.writeString(configFile, GSON.toJson(config));
@@ -61,7 +61,7 @@ public class RSTConfig {//    模组配置相关函数，模组配置采用.json
      * @param defaultValue 数据默认值
      * @return 读取结果
      */
-    static boolean getBoolean(String key, boolean defaultValue) {
+    public static boolean getBoolean(String key, boolean defaultValue) {
         return config.has(key) ? config.get(key).getAsBoolean() : defaultValue;
     }
 
@@ -72,7 +72,7 @@ public class RSTConfig {//    模组配置相关函数，模组配置采用.json
      * @param defaultValue 数据默认值
      * @return 读取结果
      */
-    static String getString(String key, String defaultValue) {
+    public static String getString(String key, String defaultValue) {
         return config.has(key) ? config.get(key).getAsString() : defaultValue;
     }
 
@@ -83,7 +83,7 @@ public class RSTConfig {//    模组配置相关函数，模组配置采用.json
      * @param defaultValue 数据默认值
      * @return 读取结果
      */
-    static int getInt(String key, int defaultValue) {
+    public static int getInt(String key, int defaultValue) {
         return config.has(key) ? config.get(key).getAsInt() : defaultValue;
     }
 
@@ -93,7 +93,7 @@ public class RSTConfig {//    模组配置相关函数，模组配置采用.json
      * @param key   写入的Boolean数据的key
      * @param value 写入的值
      */
-    static void setBoolean(@NotNull String key, boolean value) {
+    public static void setBoolean(@NotNull String key, boolean value) {
         config.addProperty(key, value);
         saveConfig();
     }
@@ -104,7 +104,7 @@ public class RSTConfig {//    模组配置相关函数，模组配置采用.json
      * @param key   写入的int数据的key
      * @param value 写入的值
      */
-    static void setInt(@NotNull String key, int value) {
+    public static void setInt(@NotNull String key, int value) {
         config.addProperty(key, value);
         saveConfig();
     }
@@ -115,7 +115,7 @@ public class RSTConfig {//    模组配置相关函数，模组配置采用.json
      * @param key   写入的String数据的key
      * @param value 写入的值
      */
-    static void setString(@NotNull String key, String value) {
+    public static void setString(@NotNull String key, String value) {
         config.addProperty(key, value);
         saveConfig();
     }

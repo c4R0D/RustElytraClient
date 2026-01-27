@@ -1,11 +1,11 @@
-package dev.rstminecraft;
+package dev.rstminecraft.utils;
 
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
 import static dev.rstminecraft.RustElytraClient.currentTick;
 
-class RSTTask {
+public class RSTTask {
 
 
     /**
@@ -13,12 +13,12 @@ class RSTTask {
      */
     static final PriorityQueue<RSTTask> tasks = new PriorityQueue<>(Comparator.<RSTTask>comparingInt(t -> t.nextRunTick).thenComparingInt(t -> -t.priority));
 
-    final RSTTask.TaskConsumer action;
-    final int period;
-    final int priority;
-    final Object[] args;
-    int repeatTimes; // -1 = 无限
-    int nextRunTick;
+    public final RSTTask.TaskConsumer action;
+    public final int period;
+    public final int priority;
+    public final Object[] args;
+    public int repeatTimes; // -1 = 无限
+    public int nextRunTick;
 
     RSTTask(RSTTask.TaskConsumer action, int period, int repeatTimes, int delay, int priority, Object[] args) {
         this.action = action;
@@ -39,7 +39,7 @@ class RSTTask {
      * @param priority    优先级，数值越大越优先
      * @param args        可变参数，传给 action
      */
-    static void scheduleTask(TaskConsumer action, int period, int repeatTimes, int delay, int priority, Object... args) {
+    public static void scheduleTask(TaskConsumer action, int period, int repeatTimes, int delay, int priority, Object... args) {
         RSTTask task = new RSTTask(action, period, repeatTimes, delay, priority, args);
         task.nextRunTick = currentTick + delay;
         tasks.add(task);
@@ -50,7 +50,7 @@ class RSTTask {
      * 优先执行优先级大的
      * 若剩余执行次数>0,重新插回队列
      */
-    static void tick() {
+    public static void tick() {
         while (!tasks.isEmpty() && tasks.peek().nextRunTick <= currentTick) {
             RSTTask task = tasks.poll();
             task.action.accept(task, task.args);
@@ -69,7 +69,7 @@ class RSTTask {
     /**
      * 任务回调,可使用lambda lambda格式:(self,args)->{}
      */
-    interface TaskConsumer {
+    public interface TaskConsumer {
         void accept(RSTTask self, Object[] args);
     }
 }

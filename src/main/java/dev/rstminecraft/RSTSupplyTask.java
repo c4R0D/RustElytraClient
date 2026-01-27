@@ -1,6 +1,8 @@
 package dev.rstminecraft;
 
 import baritone.api.BaritoneAPI;
+import dev.rstminecraft.utils.MsgLevel;
+import dev.rstminecraft.utils.RSTTask;
 import net.minecraft.block.Block;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.client.MinecraftClient;
@@ -38,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 import static dev.rstminecraft.RSTFireballProtect.isHittingFireball;
-import static dev.rstminecraft.RSTTask.scheduleTask;
+import static dev.rstminecraft.utils.RSTTask.scheduleTask;
 import static dev.rstminecraft.RustElytraClient.ModStatus;
 import static dev.rstminecraft.RustElytraClient.MsgSender;
 

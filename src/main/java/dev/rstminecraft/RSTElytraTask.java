@@ -1,6 +1,8 @@
 package dev.rstminecraft;
 
 import baritone.api.BaritoneAPI;
+import dev.rstminecraft.utils.MsgLevel;
+import dev.rstminecraft.utils.RSTTask;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -21,8 +23,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-import static dev.rstminecraft.RSTConfig.getInt;
-import static dev.rstminecraft.RSTTask.scheduleTask;
+import static dev.rstminecraft.utils.RSTConfig.getInt;
+import static dev.rstminecraft.utils.RSTTask.scheduleTask;
 import static dev.rstminecraft.RustElytraClient.*;
 
 class RSTElytraTask {
