@@ -15,11 +15,9 @@ import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.math.Vec3i;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 
 import static dev.rstminecraft.utils.RSTConfig.*;
 import static dev.rstminecraft.RustElytraClient.*;
@@ -245,17 +243,11 @@ public class RSTScr extends Screen {
                         return;
                     }
                     if (client == null || client.player == null) return;
-                    // 可以开始飞行
-                    int sl = getInt("SegLength", DEFAULT_SEGMENT_LENGTH);
-                    // 分段
-                    List<Vec3i> segments = calculatePathSegments(client, x1, z1, sl);
-                    MsgSender.SendMsg(client.player, "任务开始！补给距离：" + sl, MsgLevel.warning);
-                    if (segments.isEmpty()) {
-                        MsgSender.SendMsg(client.player, "分段失败！" + sl, MsgLevel.fatal);
-                        return;
-                    }
+                    if(TaskThread.getModThread() != null) return;
                     // 开始飞行
-                    segmentsMainSupply(segments, 0, client, getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false));
+                    int sl = getInt("SegLength", DEFAULT_SEGMENT_LENGTH);
+                    MsgSender.SendMsg(client.player, "任务开始！补给距离：" + sl, MsgLevel.warning);
+                    TaskThread.StartModThread_ELY(sl,  getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), x1, z1);
                     client.setScreen(null);
                 })// 一个“开始飞行”按钮
         };
