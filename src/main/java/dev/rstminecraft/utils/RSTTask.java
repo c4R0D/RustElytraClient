@@ -39,10 +39,11 @@ public class RSTTask {
      * @param priority    优先级，数值越大越优先
      * @param args        可变参数，传给 action
      */
-    public static void scheduleTask(TaskConsumer action, int period, int repeatTimes, int delay, int priority, Object... args) {
+    public static RSTTask scheduleTask(TaskConsumer action, int period, int repeatTimes, int delay, int priority, Object... args) {
         RSTTask task = new RSTTask(action, period, repeatTimes, delay, priority, args);
         task.nextRunTick = currentTick + delay;
         tasks.add(task);
+        return task;
     }
 
     /**

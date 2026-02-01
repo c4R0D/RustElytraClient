@@ -20,6 +20,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
@@ -154,7 +155,23 @@ public class RustSupplyTask {
                 else if (s.getItem() == Items.ENDER_CHEST) enderChestCount += s.getCount();
                 else if (s.getItem() == Items.GOLDEN_CARROT) goldenCarrotCount += s.getCount();
             }
-            if (enderChestCount > 2 && pickaxe && sword && goldenCarrotCount > 15) return;
+            int diamondArmor = 0;
+            int goldenArmor = 0;
+            boolean elytra = false;
+            ItemStack s = client.player.getInventory().getArmorStack(2);
+            elytra = isStackHasEnchantment(s, Enchantments.UNBREAKING, 3) && isStackHasEnchantment(s, Enchantments.MENDING, 1);
+            s = client.player.getInventory().getArmorStack(0);
+            if((s.getItem() == Items.DIAMOND_BOOTS || s.getItem() == Items.NETHERITE_BOOTS) && isStackHasEnchantment(s,Enchantments.PROTECTION,4)) diamondArmor++;
+            if(s.getItem() == Items.GOLDEN_BOOTS && isStackHasEnchantment(s,Enchantments.PROTECTION,4)) goldenArmor++;
+            s = client.player.getInventory().getArmorStack(1);
+            if((s.getItem() == Items.DIAMOND_LEGGINGS || s.getItem() == Items.NETHERITE_LEGGINGS) && isStackHasEnchantment(s,Enchantments.PROTECTION,4)) diamondArmor++;
+            if(s.getItem() == Items.GOLDEN_LEGGINGS && isStackHasEnchantment(s,Enchantments.PROTECTION,4)) goldenArmor++;
+            s = client.player.getInventory().getArmorStack(3);
+            if((s.getItem() == Items.DIAMOND_HELMET || s.getItem() == Items.NETHERITE_HELMET) && isStackHasEnchantment(s,Enchantments.PROTECTION,4)) diamondArmor++;
+            if(s.getItem() == Items.GOLDEN_HELMET && isStackHasEnchantment(s,Enchantments.PROTECTION,4)) goldenArmor++;
+
+
+            if (enderChestCount > 2 && pickaxe && sword && goldenCarrotCount > 15 && elytra && goldenArmor == 1 && diamondArmor == 2) return;
             throw new TaskThread.TaskException("没有足够的物资！");
         });
     }
@@ -166,7 +183,7 @@ public class RustSupplyTask {
      * @param item   寻找的物品
      * @return 物品位置（-1 代表没有）
      */
-    private static int findItemInHotBar(@NotNull ClientPlayerEntity player, Item item) {
+    static int findItemInHotBar(@NotNull ClientPlayerEntity player, Item item) {
         int slot = -1;
         for (int i = 0; i < 9; i++) {
             ItemStack stack = player.getInventory().getStack(i);
@@ -336,7 +353,7 @@ public class RustSupplyTask {
      * @param client  客户端对象
      * @param handled 已经打开的末影箱窗口的handled
      * @param checker 一个lambda,接受潜影盒内容物列表,判断是否符合条件
-     * @return 符合条件的潜影盒所在位置(-1 代表没有)
+     * @return 符合条件的潜影盒所在位置(- 1 代表没有)
      */
     private static int SupplyShulkerFinder(@NotNull MinecraftClient client, @NotNull HandledScreen<?> handled, @NotNull ShulkerInnerChecker checker) {
         if (client.player == null) throw new TaskThread.TaskException("player为null");
@@ -430,28 +447,39 @@ public class RustSupplyTask {
      */
     private static int ShulkerElytraFinder(@NotNull DefaultedList<ItemStack> inner) {
         int num = 0;
-        // 遍历内存储的每个物品堆栈
+        // 遍历每个物品堆栈
         for (ItemStack stack : inner) {
             if (stack.isEmpty()) {
                 continue;  // 跳过空的物品堆栈
             }
-            // 判断烟花
-            if (stack.getItem() == Items.ELYTRA) {
-                if (stack.getDamage() > 15) continue;
-                var enchantments = stack.get(DataComponentTypes.ENCHANTMENTS);
-                if (enchantments != null) {
-                    var enc = enchantments.getEnchantments();
-                    for (RegistryEntry<Enchantment> entry : enc) {
-                        // 耐久三
-                        if (entry.getKey().isPresent() && entry.getKey().get() == Enchantments.UNBREAKING && EnchantmentHelper.getLevel(entry, stack) == 3) {
-                            num += stack.getCount();
-                        }
+            // 判断附魔
+            if (stack.getItem() == Items.ELYTRA && stack.getDamage() <= 15 && isStackHasEnchantment(stack, Enchantments.UNBREAKING, 3)) {
+                num += stack.getCount();
 
-                    }
-                }
             }
         }
         return num;
+    }
+
+    /**
+     * 检测某个stack是否有某个附魔(且等级大于要求)
+     *
+     * @param stack       ItemStack
+     * @param enchantment 附魔名称。如Enchantments.UNBREAKING
+     * @param minLevel    最小等级
+     * @return 是否有符合要求的附魔
+     */
+    private static boolean isStackHasEnchantment(ItemStack stack, RegistryKey<Enchantment> enchantment, int minLevel) {
+        var enchantments = stack.get(DataComponentTypes.ENCHANTMENTS);
+        if (enchantments != null) {
+            var enc = enchantments.getEnchantments();
+            for (RegistryEntry<Enchantment> entry : enc) {
+                if (entry.getKey().isPresent() && entry.getKey().get() == enchantment && EnchantmentHelper.getLevel(entry, stack) >= minLevel) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -615,7 +643,7 @@ public class RustSupplyTask {
      * @param isXP   是否为经验模式
      * @throws TaskThread.TaskException 通过抛出异常中断
      */
-    static void SupplyTask(@NotNull MinecraftClient client, boolean isXP) throws TaskThread.TaskException,TaskThread.TaskCanceled {
+    static void SupplyTask(@NotNull MinecraftClient client, boolean isXP) throws TaskThread.TaskException, TaskThread.TaskCanceled {
         if (client.player == null) throw new TaskThread.TaskException("Player为null");
 
         // 首先走到方块中央
@@ -646,7 +674,7 @@ public class RustSupplyTask {
 
         // 末影箱打开成功，准备寻找合适补给
         int SupplySlot = SupplyShulkerFinder(client, EnderChestHandled, (inner) -> isXP ? // 分XP和鞘翅两种模式
-                ShulkerInnerFinder(Items.FIREWORK_ROCKET, inner) >= 27 * 64 : // XP模式要求一整盒烟花
+                ShulkerInnerFinder(Items.FIREWORK_ROCKET, inner) >= 23 * 64 && ShulkerInnerFinder(Items.EXPERIENCE_BOTTLE, inner) >= 3 * 64 : // XP模式要求24组烟花和6个鞘翅
                 ShulkerInnerFinder(Items.FIREWORK_ROCKET, inner) >= 21 * 64 && ShulkerElytraFinder(inner) >= 5 // 鞘翅模式要求21组烟花和5个耐久三鞘翅
         );
         if (SupplySlot == -1) throw new TaskThread.TaskException("末影箱中没有目标物品");

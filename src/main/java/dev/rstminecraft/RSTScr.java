@@ -18,9 +18,8 @@ import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-
-import static dev.rstminecraft.utils.RSTConfig.*;
 import static dev.rstminecraft.RustElytraClient.*;
+import static dev.rstminecraft.utils.RSTConfig.*;
 
 
 public class RSTScr extends Screen {
@@ -220,7 +219,7 @@ public class RSTScr extends Screen {
     // 开始飞行菜单
     private static class ciSrc extends Screen {
         // 3行一列
-        private static final int ciButtonsRow = 3;
+        private static final int ciButtonsRow = 4;
         private static final int ciButtonsCol = 1;
         private final Screen parent;
         private final int buttonWidth;
@@ -228,7 +227,7 @@ public class RSTScr extends Screen {
         private @Nullable String z = null;
         private final SrcEntry[] ciEntry = {new SrcInputEntry("目的地X坐标", "目的地X坐标", str -> this.x = str), // 一个X轴输入框
                 new SrcInputEntry("目的地Z坐标", "目的地Z坐标", str -> this.z = str), // 一个Y轴输入框
-                new SrcButtonEntry("开始飞行", "开始前往上方输入的坐标", () -> {
+                new SrcButtonEntry("开始飞行(鞘翅模式)", "开始前往上方输入的坐标,并在必要时补充新的满耐久鞘翅", () -> {
                     int x1, z1;
                     // 将输入框内文本转为数字,若转换异常,则说明输入信息有误,提前返回
                     if (x == null || z == null) return;
@@ -243,11 +242,33 @@ public class RSTScr extends Screen {
                         return;
                     }
                     if (client == null || client.player == null) return;
-                    if(TaskThread.getModThread() != null) return;
+                    if (TaskThread.getModThread() != null) return;
                     // 开始飞行
                     int sl = getInt("SegLength", DEFAULT_SEGMENT_LENGTH);
                     MsgSender.SendMsg(client.player, "任务开始！补给距离：" + sl, MsgLevel.warning);
-                    TaskThread.StartModThread_ELY(sl,  getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), x1, z1);
+                    TaskThread.StartModThread_ELY(sl, getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), x1, z1);
+                    client.setScreen(null);
+                }),// 一个“开始飞行”按钮
+                new SrcButtonEntry("开始飞行(XP模式)", "开始前往上方输入的坐标,鞘翅无耐久时通过附魔之瓶补充,仅需一个鞘翅", () -> {
+                    int x1, z1;
+                    // 将输入框内文本转为数字,若转换异常,则说明输入信息有误,提前返回
+                    if (x == null || z == null) return;
+                    try {
+                        x1 = Integer.parseInt(x);
+                    } catch (NumberFormatException e) {
+                        return;
+                    }
+                    try {
+                        z1 = Integer.parseInt(z);
+                    } catch (NumberFormatException e) {
+                        return;
+                    }
+                    if (client == null || client.player == null) return;
+                    if (TaskThread.getModThread() != null) return;
+                    // 开始飞行
+                    int sl = getInt("SegLength", DEFAULT_SEGMENT_LENGTH);
+                    MsgSender.SendMsg(client.player, "任务开始！补给距离：" + sl, MsgLevel.warning);
+                    TaskThread.StartModThread_XP(sl, getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), x1, z1);
                     client.setScreen(null);
                 })// 一个“开始飞行”按钮
         };

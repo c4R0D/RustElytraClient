@@ -74,6 +74,10 @@ public class RustElytraClient implements ClientModInitializer {
             scheduleTask((s, a) -> MinecraftClient.getInstance().setScreen(new RSTScr(MinecraftClient.getInstance().currentScreen, getBoolean("FirstUse", true))), 1, 0, 2, 100000);
             return 1;
         })));
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(ClientCommandManager.literal("RSTDebug-IDLE").executes(context -> {
+            ModStatus = ModStatuses.idle;
+            return 1;
+        })));
         // 命令开启飞行，不推荐，优先使用GUI
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(ClientCommandManager.literal("RSTAutoElytra").then(ClientCommandManager.argument("x", IntegerArgumentType.integer()).then(ClientCommandManager.argument("z", IntegerArgumentType.integer()).executes(context -> {
             MinecraftClient client = MinecraftClient.getInstance();
