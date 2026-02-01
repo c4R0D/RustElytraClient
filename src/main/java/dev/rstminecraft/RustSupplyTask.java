@@ -157,7 +157,7 @@ public class RustSupplyTask {
             }
             int diamondArmor = 0;
             int goldenArmor = 0;
-            boolean elytra = false;
+            boolean elytra;
             ItemStack s = client.player.getInventory().getArmorStack(2);
             elytra = isStackHasEnchantment(s, Enchantments.UNBREAKING, 3) && isStackHasEnchantment(s, Enchantments.MENDING, 1);
             s = client.player.getInventory().getArmorStack(0);
