@@ -23,7 +23,7 @@ import static dev.rstminecraft.utils.RSTTask.scheduleTask;
 
 public class TaskThread extends Thread {
     private static @Nullable TaskThread ModThread = null;
-    private final int SegLength, TargetX, TargetZ;
+    private final int TargetX, TargetZ;
     private final boolean isAutoLog, isAutoLogOnSeg1;
     private final boolean isXP;
 
@@ -31,15 +31,13 @@ public class TaskThread extends Thread {
      * private的构造函数，用于阻止本class外的函数新建Mod线程，即只有零个/一个Mod线程（单例模式）
      *
      * @param isXP            是否需要XP补给
-     * @param SegLength       补给段长度
      * @param isAutoLog       是否自动退出
      * @param isAutoLogOnSeg1 是否在第一段自动退出
      * @param TargetX         目标X坐标
      * @param TargetZ         目标Z坐标
      */
-    private TaskThread(boolean isXP, int SegLength, boolean isAutoLog, boolean isAutoLogOnSeg1, int TargetX, int TargetZ) {
+    private TaskThread(boolean isXP, boolean isAutoLog, boolean isAutoLogOnSeg1, int TargetX, int TargetZ) {
         this.isXP = isXP;
-        this.SegLength = SegLength;
         this.isAutoLog = isAutoLog;
         this.isAutoLogOnSeg1 = isAutoLogOnSeg1;
         this.TargetX = TargetX;
@@ -67,28 +65,26 @@ public class TaskThread extends Thread {
     /**
      * 启动一个新鞘翅补给模式的任务
      *
-     * @param SegLength       补给段长度
      * @param isAutoLog       是否自动退出
      * @param isAutoLogOnSeg1 是否在第一段自动退出
      * @param TargetX         目标X坐标
      * @param TargetZ         目标Z坐标
      */
-    public static void StartModThread_ELY(int SegLength, boolean isAutoLog, boolean isAutoLogOnSeg1, int TargetX, int TargetZ) {
-        ModThread = new TaskThread(false, SegLength, isAutoLog, isAutoLogOnSeg1, TargetX, TargetZ);
+    public static void StartModThread_ELY(boolean isAutoLog, boolean isAutoLogOnSeg1, int TargetX, int TargetZ) {
+        ModThread = new TaskThread(false, isAutoLog, isAutoLogOnSeg1, TargetX, TargetZ);
         ModThread.start();
     }
 
     /**
      * 启动一个附魔之瓶补给模式的任务
      *
-     * @param SegLength       补给段长度
      * @param isAutoLog       是否自动退出
      * @param isAutoLogOnSeg1 是否在第一段自动退出
      * @param TargetX         目标X坐标
      * @param TargetZ         目标Z坐标
      */
-    public static void StartModThread_XP(int SegLength, boolean isAutoLog, boolean isAutoLogOnSeg1, int TargetX, int TargetZ) {
-        ModThread = new TaskThread(true, SegLength, isAutoLog, isAutoLogOnSeg1, TargetX, TargetZ);
+    public static void StartModThread_XP(boolean isAutoLog, boolean isAutoLogOnSeg1, int TargetX, int TargetZ) {
+        ModThread = new TaskThread(true, isAutoLog, isAutoLogOnSeg1, TargetX, TargetZ);
         ModThread.start();
     }
 
@@ -153,56 +149,6 @@ public class TaskThread extends Thread {
     }
 
     /**
-     * 计算分段
-     *
-     * @param client  客户端对象
-     * @param targetX 目标地点X轴
-     * @param targetZ 目标地点Y轴
-     * @param segLen  每段长度
-     * @return 分段列表
-     */
-    static @NotNull List<Vec3i> calculatePathSegments(@NotNull MinecraftClient client, double targetX, double targetZ, double segLen) {
-        List<Vec3i> segmentEndpoints = new ArrayList<>();
-        if (client.player == null) {
-            return new ArrayList<>();
-        }
-        // 获取玩家当前位置（只使用X和Z）
-        Vec3d playerPos = client.player.getPos();
-        double startX = playerPos.x;
-        double startZ = playerPos.z;
-
-        // 计算到目标点的方向向量（只考虑XZ平面）
-        double dx = targetX - startX;
-        double dz = targetZ - startZ;
-
-        // 计算总距离（在XZ平面上）
-        double totalDistance = Math.sqrt(dx * dx + dz * dz);
-
-        // 如果总距离为0，直接返回空列表
-        if (totalDistance == 0) return segmentEndpoints;
-
-        // 计算方向向量的单位向量
-        double unitX = dx / totalDistance;
-        double unitZ = dz / totalDistance;
-
-        // 计算分段数量
-        int segments = (int) Math.ceil(totalDistance / segLen);
-
-        // 生成每个分段的终点坐标（Y坐标设为0）
-        for (int i = 1; i <= segments; i++) {
-            double currentSegmentLength = Math.min(i * segLen, totalDistance);
-
-            double endX = startX + unitX * currentSegmentLength;
-            double endZ = startZ + unitZ * currentSegmentLength;
-
-            segmentEndpoints.add(new Vec3i((int) endX, 0, (int) endZ));
-        }
-
-        return segmentEndpoints;
-    }
-
-
-    /**
      * 任务失败处理函数
      *
      * @param client 客户端对象
@@ -238,14 +184,9 @@ public class TaskThread extends Thread {
 
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.player == null) return;
-        List<Vec3i> segments = calculatePathSegments(client, TargetX, TargetZ, SegLength);
         ModStatus = ModStatuses.running;
-        if (segments.isEmpty()) {
-            MsgSender.SendMsg(client.player, "分段失败！", MsgLevel.fatal);
-            return;
-        }
-        for (int nowSeg = 0; nowSeg < segments.size(); nowSeg++) {
-
+        for (int nowSeg = 0; ; nowSeg++) {
+            MsgSender.SendMsg(client.player,"第"+nowSeg+"段补给任务开始！",MsgLevel.info);
             // 先开启补给守护任务（防火球、防伤害）
             float h = client.player.getHealth();
             int finalNowSeg = nowSeg;
@@ -288,9 +229,13 @@ public class TaskThread extends Thread {
                 return;
             }
 
+            MsgSender.SendMsg(client.player,"第"+nowSeg+"段飞行任务开始！",MsgLevel.info);
             // 开启鞘翅任务
             try {
-                RustElytraTask.ElytraTask(client, segments.get(nowSeg).getX(), segments.get(nowSeg).getZ(),isXP);
+                if (RustElytraTask.ElytraTask(client, this.TargetX, this.TargetZ, isXP)) {
+                    MsgSender.SendMsg(client.player, "到达目的地！圆满完成！！！", MsgLevel.warning);
+                    return;
+                }
                 delay(1);
             } catch (TaskException e) {
                 // 飞行失败

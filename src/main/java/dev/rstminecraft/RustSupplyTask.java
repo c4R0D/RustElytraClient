@@ -150,8 +150,9 @@ public class RustSupplyTask {
             int goldenCarrotCount = 0;
             for (int i = 0; i < 9; i++) {
                 ItemStack s = client.player.getInventory().getStack(i);
-                if (s.getItem() == Items.NETHERITE_PICKAXE || s.getItem() == Items.DIAMOND_PICKAXE) pickaxe = true;
-                else if (s.getItem() == Items.NETHERITE_SWORD || s.getItem() == Items.DIAMOND_SWORD) sword = true;
+                if (s.getItem() == Items.NETHERITE_PICKAXE || s.getItem() == Items.DIAMOND_PICKAXE && isStackHasEnchantment(s, Enchantments.EFFICIENCY, 4) && isStackHasEnchantment(s, Enchantments.SILK_TOUCH, 1))
+                    pickaxe = true;
+                else if ((s.getItem() == Items.NETHERITE_SWORD || s.getItem() == Items.DIAMOND_SWORD)) sword = true;
                 else if (s.getItem() == Items.ENDER_CHEST) enderChestCount += s.getCount();
                 else if (s.getItem() == Items.GOLDEN_CARROT) goldenCarrotCount += s.getCount();
             }
@@ -161,17 +162,24 @@ public class RustSupplyTask {
             ItemStack s = client.player.getInventory().getArmorStack(2);
             elytra = isStackHasEnchantment(s, Enchantments.UNBREAKING, 3) && isStackHasEnchantment(s, Enchantments.MENDING, 1);
             s = client.player.getInventory().getArmorStack(0);
-            if((s.getItem() == Items.DIAMOND_BOOTS || s.getItem() == Items.NETHERITE_BOOTS) && isStackHasEnchantment(s,Enchantments.PROTECTION,4)) diamondArmor++;
-            if(s.getItem() == Items.GOLDEN_BOOTS && isStackHasEnchantment(s,Enchantments.PROTECTION,4)) goldenArmor++;
+            if ((s.getItem() == Items.DIAMOND_BOOTS || s.getItem() == Items.NETHERITE_BOOTS) && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
+                diamondArmor++;
+            if (s.getItem() == Items.GOLDEN_BOOTS && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
+                goldenArmor++;
             s = client.player.getInventory().getArmorStack(1);
-            if((s.getItem() == Items.DIAMOND_LEGGINGS || s.getItem() == Items.NETHERITE_LEGGINGS) && isStackHasEnchantment(s,Enchantments.PROTECTION,4)) diamondArmor++;
-            if(s.getItem() == Items.GOLDEN_LEGGINGS && isStackHasEnchantment(s,Enchantments.PROTECTION,4)) goldenArmor++;
+            if ((s.getItem() == Items.DIAMOND_LEGGINGS || s.getItem() == Items.NETHERITE_LEGGINGS) && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
+                diamondArmor++;
+            if (s.getItem() == Items.GOLDEN_LEGGINGS && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
+                goldenArmor++;
             s = client.player.getInventory().getArmorStack(3);
-            if((s.getItem() == Items.DIAMOND_HELMET || s.getItem() == Items.NETHERITE_HELMET) && isStackHasEnchantment(s,Enchantments.PROTECTION,4)) diamondArmor++;
-            if(s.getItem() == Items.GOLDEN_HELMET && isStackHasEnchantment(s,Enchantments.PROTECTION,4)) goldenArmor++;
+            if ((s.getItem() == Items.DIAMOND_HELMET || s.getItem() == Items.NETHERITE_HELMET) && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
+                diamondArmor++;
+            if (s.getItem() == Items.GOLDEN_HELMET && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
+                goldenArmor++;
 
 
-            if (enderChestCount > 2 && pickaxe && sword && goldenCarrotCount > 15 && elytra && goldenArmor == 1 && diamondArmor == 2) return;
+            if (enderChestCount > 2 && pickaxe && sword && goldenCarrotCount > 15 && elytra && goldenArmor == 1 && diamondArmor == 2)
+                return;
             throw new TaskThread.TaskException("没有足够的物资！");
         });
     }

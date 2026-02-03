@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static dev.rstminecraft.RustElytraClient.DEFAULT_SEGMENT_LENGTH;
 
 public class RSTConfig {//    模组配置相关函数，模组配置采用.json储存
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -33,7 +32,6 @@ public class RSTConfig {//    模组配置相关函数，模组配置采用.json
                 config.addProperty("FirstUse", true);
                 config.addProperty("isAutoLog", true);
                 config.addProperty("isAutoLogOnSeg1", false);
-                config.addProperty("SegLength", DEFAULT_SEGMENT_LENGTH);
                 config.addProperty("DisplayDebug", false);
                 saveConfig();
             }

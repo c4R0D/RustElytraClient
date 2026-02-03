@@ -19,7 +19,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static dev.rstminecraft.RustElytraClient.*;
-import static dev.rstminecraft.utils.RSTConfig.*;
+import static dev.rstminecraft.utils.RSTConfig.getBoolean;
+import static dev.rstminecraft.utils.RSTConfig.setBoolean;
 
 
 public class RSTScr extends Screen {
@@ -244,9 +245,8 @@ public class RSTScr extends Screen {
                     if (client == null || client.player == null) return;
                     if (TaskThread.getModThread() != null) return;
                     // 开始飞行
-                    int sl = getInt("SegLength", DEFAULT_SEGMENT_LENGTH);
-                    MsgSender.SendMsg(client.player, "任务开始！补给距离：" + sl, MsgLevel.warning);
-                    TaskThread.StartModThread_ELY(sl, getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), x1, z1);
+                    MsgSender.SendMsg(client.player, "任务开始！", MsgLevel.warning);
+                    TaskThread.StartModThread_ELY(getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), x1, z1);
                     client.setScreen(null);
                 }),// 一个“开始飞行”按钮
                 new SrcButtonEntry("开始飞行(XP模式)", "开始前往上方输入的坐标,鞘翅无耐久时通过附魔之瓶补充,仅需一个鞘翅", () -> {
@@ -266,9 +266,8 @@ public class RSTScr extends Screen {
                     if (client == null || client.player == null) return;
                     if (TaskThread.getModThread() != null) return;
                     // 开始飞行
-                    int sl = getInt("SegLength", DEFAULT_SEGMENT_LENGTH);
-                    MsgSender.SendMsg(client.player, "任务开始！补给距离：" + sl, MsgLevel.warning);
-                    TaskThread.StartModThread_XP(sl, getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), x1, z1);
+                    MsgSender.SendMsg(client.player, "任务开始！", MsgLevel.warning);
+                    TaskThread.StartModThread_XP(getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), x1, z1);
                     client.setScreen(null);
                 })// 一个“开始飞行”按钮
         };
@@ -304,11 +303,10 @@ public class RSTScr extends Screen {
     // 设置屏幕
     private static class SettingsSrc extends Screen {
         // 5行一列
-        private static final int SettingsButtonsRow = 5;
+        private static final int SettingsButtonsRow = 3;
         private static final int SettingsButtonsCol = 1;
         private final Screen parent;
         private final int buttonWidth;
-        private String SegLen = String.valueOf(getInt("SegLength", DEFAULT_SEGMENT_LENGTH));
         private ClickableWidget @NotNull [] SettingsWidget = new ClickableWidget[SettingsButtonsCol * SettingsButtonsRow];
         private SrcEntry[] SettingsEntry;
 
@@ -328,20 +326,6 @@ public class RSTScr extends Screen {
             }), new SrcButtonEntry("第一段自动退出:" + (getBoolean("isAutoLogOnSeg1", false) ? "开" : "关"), "在任务刚开始时若失败是否自动退出。假如否，您可以避免在第一次补给时因“末影箱中没有补给物品”等简单原因自动退出（造成时间浪费），但请确保第一次补给成功后再离开电脑", () -> {
                 setBoolean("isAutoLogOnSeg1", !getBoolean("isAutoLogOnSeg1", false));
                 BuildButtons();
-            }), new SrcInputEntry("补给分段距离", String.valueOf(getInt("SegLength", DEFAULT_SEGMENT_LENGTH)), text -> this.SegLen = text), new SrcButtonEntry("更改补给距离", "点击此处将补给距离改为上方输入框中的值（>10000)", () -> {
-                int sl;
-                if (SegLen == null) return;
-                try {
-                    sl = Integer.parseInt(SegLen);
-                } catch (NumberFormatException e) {
-                    return;
-                }
-                setInt("SegLength", sl);
-                SegLen = String.valueOf(getInt("SegLength", DEFAULT_SEGMENT_LENGTH));
-                if (client != null && client.player != null) {
-                    MsgSender.SendMsg(client.player, "已将补给距离设为：" + sl, MsgLevel.info);
-
-                }
             }), new SrcButtonEntry("发送调试信息:" + (getBoolean("DisplayDebug", false) ? "开" : "关"), "是否发送调试信息", () -> {
                 setBoolean("DisplayDebug", !getBoolean("DisplayDebug", false));
                 MsgSender = new RSTMsgSender(getBoolean("DisplayDebug", false) ? MsgLevel.debug : MsgLevel.info);
@@ -368,20 +352,6 @@ public class RSTScr extends Screen {
             }), new SrcButtonEntry("第一段自动退出:" + (getBoolean("isAutoLogOnSeg1", false) ? "开" : "关"), "在任务刚开始时若失败是否自动退出。假如否，您可以避免在第一次补给时因“末影箱中没有补给物品”等简单原因自动退出（造成时间浪费），但请确保第一次补给成功后再离开电脑", () -> {
                 setBoolean("isAutoLogOnSeg1", !getBoolean("isAutoLogOnSeg1", false));
                 BuildButtons();
-            }), new SrcInputEntry("补给分段距离", String.valueOf(getInt("SegLength", DEFAULT_SEGMENT_LENGTH)), text -> this.SegLen = text), new SrcButtonEntry("更改补给距离", "点击此处将补给距离改为上方输入框中的值（>10000)", () -> {
-                int sl;
-                if (SegLen == null) return;
-                try {
-                    sl = Integer.parseInt(SegLen);
-                } catch (NumberFormatException e) {
-                    return;
-                }
-                setInt("SegLength", sl);
-                SegLen = String.valueOf(getInt("SegLength", DEFAULT_SEGMENT_LENGTH));
-                if (client != null && client.player != null) {
-                    MsgSender.SendMsg(client.player, "已将补给距离设为：" + sl, MsgLevel.info);
-
-                }
             }), new SrcButtonEntry("发送调试信息:" + (getBoolean("DisplayDebug", false) ? "开" : "关"), "是否发送调试信息", () -> {
                 setBoolean("DisplayDebug", !getBoolean("DisplayDebug", false));
                 MsgSender = new RSTMsgSender(getBoolean("DisplayDebug", false) ? MsgLevel.debug : MsgLevel.info);

@@ -35,7 +35,6 @@ import static dev.rstminecraft.utils.RSTTask.tick;
 public class RustElytraClient implements ClientModInitializer {
 
     public static final Logger MODLOGGER = LoggerFactory.getLogger("rust-elytra-client");
-    public static final int DEFAULT_SEGMENT_LENGTH = 140000; // 每段路径长度
     public static final AtomicReference<TaskHolder<?>> currentTask = new AtomicReference<>();
     static final Object ThreadLock = new Object();
     public static int currentTick = 0;
@@ -86,11 +85,10 @@ public class RustElytraClient implements ClientModInitializer {
             }
             int targetX = IntegerArgumentType.getInteger(context, "x");
             int targetZ = IntegerArgumentType.getInteger(context, "z");
-            int sl = getInt("SegLength", DEFAULT_SEGMENT_LENGTH);
 
             if(TaskThread.getModThread() != null) return 0;
-            MsgSender.SendMsg(client.player, "任务开始！补给距离：" + sl, MsgLevel.warning);
-            TaskThread.StartModThread_ELY(sl,  getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), targetX, targetZ);
+            MsgSender.SendMsg(client.player, "任务开始！", MsgLevel.warning);
+            TaskThread.StartModThread_ELY(getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), targetX, targetZ);
             return 1;
         })))));
 

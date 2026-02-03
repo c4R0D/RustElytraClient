@@ -33,7 +33,6 @@ import static dev.rstminecraft.RSTFireballProtect.FireballProtector;
 import static dev.rstminecraft.RustElytraClient.*;
 import static dev.rstminecraft.TaskThread.RunAsMainThread;
 import static dev.rstminecraft.TaskThread.delay;
-import static dev.rstminecraft.utils.RSTConfig.getInt;
 import static dev.rstminecraft.utils.RSTTask.scheduleTask;
 
 
@@ -50,22 +49,19 @@ public class RustElytraTask {
     private static int LastSegFailedTick = 0;
     private static @Nullable BlockPos LastPos;
     private static boolean noFirework = false;
+    private static boolean noElytra = false;
     private static boolean isJumpBlockedByBlock = false;
     private static @Nullable BlockPos oldPos = null;
     private static int spinTimes = 0;
     private static boolean waitReset = false;
-    private static int elytraCount;
-    private static int FireworkCount;
-    private static @Nullable BlockPos LastDebugPos = null;
     private static int inFireTick = 0;
-    private static boolean isRepairing = false;
 
     /**
      * 重置状态
      */
     private static void resetStatus() {
         arrived = false;
-        isRepairing = false;
+        noElytra = false;
         isJumping = false;
         jumpingTimes = 0;
         LastJumpingTick = 0;
@@ -77,8 +73,6 @@ public class RustElytraTask {
         isJumpBlockedByBlock = false;
         spinTimes = 0;
         waitReset = false;
-        elytraCount = 0;
-        FireworkCount = 0;
     }
 
     /**
@@ -140,35 +134,15 @@ public class RustElytraTask {
                     RunAsMainThread(() -> client.interactionManager.clickSlot(handler.syncId, finalI, 0, SlotActionType.QUICK_MOVE, client.player));
                 }
             }
-            int d = 0;
-            for (int i = 0; i < 46; i++) {
-                Slot s = handler.getSlot(i);
-                if (s == null) continue;
-                ItemStack stack = s.getStack();
-                if (stack == null || stack.isEmpty()) continue;
-                Item item = stack.getItem();
-                if (item == Items.ELYTRA) {
-                    d += stack.getMaxDamage() - stack.getDamage();
-                }
-            }
             RunAsMainThread(handled::close);
 
 
             if (c <= 128 && !noFirework) {
-                if (client.player.getBlockPos().isWithinDistance(new BlockPos(x, 0, z), (getInt("SegLength", DEFAULT_SEGMENT_LENGTH) - 3500) * 0.6)) {
+                if (client.player.getBlockPos().isWithinDistance(new BlockPos(x, 0, z), 100000)) {
                     noFirework = true;
                     MsgSender.SendMsg(client.player, "烟花不足，提前寻找位置降落！", MsgLevel.info);
                 } else
                     throw new TaskThread.TaskException("烟花不足，以飞行路程不足总路程60%，可能是baritone设置错误？请检查！");
-            }
-            // 统计玩家烟花消耗速度，调试用
-            if (elytraCount != 0 && FireworkCount != 0 && LastDebugPos != null) {
-                MsgSender.SendMsg(client.player, "目前鞘翅剩余耐久：" + d + "鞘翅预计可以飞行" + 2160.0 / (elytraCount - d) * Math.sqrt(client.player.getBlockPos().getSquaredDistance(LastDebugPos)), MsgLevel.debug);
-                MsgSender.SendMsg(client.player, "目前烟花剩余数量：" + (c + count) + "烟花预计可以飞行" + 1344.0 / (FireworkCount - c - count) * Math.sqrt(client.player.getBlockPos().getSquaredDistance(LastDebugPos)), MsgLevel.debug);
-            } else {
-                elytraCount = d;
-                FireworkCount = c + count;
-                LastDebugPos = client.player.getBlockPos();
             }
         }
     }
@@ -213,7 +187,7 @@ public class RustElytraTask {
         if (client.player == null || client.getNetworkHandler() == null) throw new TaskThread.TaskException("null");
         int slot2 = -1;
         // 自动进食，恢复血量
-        if (isEating == 0 && !client.player.isInLava() && client.player.getVelocity().length() > 1.4 && (client.player.getHungerManager().getFoodLevel() < 16 || client.player.getHealth() < 15 && client.player.getHungerManager().getFoodLevel() < 20)) {
+        if (isEating == 0 && !client.player.isInLava() && client.player.getVelocity().length() > 1.3 && (client.player.getHungerManager().getFoodLevel() < 16 || client.player.getHealth() < 15 && client.player.getHungerManager().getFoodLevel() < 20)) {
             MsgSender.SendMsg(client.player, "准备食用", MsgLevel.tip);
             for (int i = 0; i < 8; i++) {
                 ItemStack s = client.player.getInventory().getStack(i);
@@ -241,7 +215,7 @@ public class RustElytraTask {
                 isEating = 0;
                 return;
             }
-            if (client.player.getVelocity().length() < 0.9) {
+            if (client.player.getVelocity().length() < 0.7) {
                 // 速度过低，放弃吃食物，防止影响baritone寻路
                 MsgSender.SendMsg(client.player, "放弃吃食物！！！", MsgLevel.tip);
                 client.options.useKey.setPressed(false);
@@ -496,13 +470,15 @@ public class RustElytraTask {
 
     /**
      * 用于检测是否需要修复鞘翅，并在必要时修复（仅附魔之瓶模式）
+     *
      * @param client 客户端对象
-     * @param x 目的地X坐标
-     * @param z 目的地Z坐标
+     * @param x      目的地X坐标
+     * @param z      目的地Z坐标
      */
     private static void RepairElytra(@NotNull MinecraftClient client, int x, int z) {
         if (client.player == null || client.world == null || client.interactionManager == null || client.getNetworkHandler() == null)
             throw new TaskThread.TaskException("null!");
+        if (noElytra) return;
         ItemStack ElytraStack = client.player.getInventory().getArmorStack(2);
         if (ElytraStack.getItem() != Items.ELYTRA) throw new TaskThread.TaskException("未穿戴鞘翅!");
         if (ElytraStack.getDamage() > ElytraStack.getMaxDamage() - 40) {
@@ -516,7 +492,15 @@ public class RustElytraTask {
                     TaskThread.delay(1);
                 }
                 TaskThread.delay(1);
-
+                int m = 0;
+                for (int i = 9; i < 36; i++) {
+                    ItemStack s = client.player.getInventory().getStack(i);
+                    if (s.getItem() == Items.EXPERIENCE_BOTTLE) m += s.getCount();
+                }
+                if (m < 32) {
+                    MsgSender.SendMsg(client.player, "准备获取附魔之瓶补给", MsgLevel.info);
+                    return;
+                }
                 // 找一个可以放附魔之瓶的快捷栏槽位
                 int FireworkSlot = RustSupplyTask.findItemInHotBar(client.player, Items.FIREWORK_ROCKET);
 
@@ -527,6 +511,7 @@ public class RustElytraTask {
                         throw new TaskThread.TaskException("窗口异常");
                     return handled2;
                 });
+
 
                 // 取出附魔之瓶
                 int BottleSlot = -1;
@@ -611,6 +596,21 @@ public class RustElytraTask {
         }
     }
 
+    private static void ElytraChecker(@NotNull MinecraftClient client) {
+        if (client.player == null) throw new TaskThread.TaskException("null");
+        if (noElytra) return;
+        int m = 0;
+        for (int i = 0; i < 41; i++) {
+            ItemStack s = client.player.getInventory().getStack(i);
+            if (s.getItem() == Items.ELYTRA) m += s.getMaxDamage() - s.getDamage();
+        }
+        if (m < 40) {
+            MsgSender.SendMsg(client.player, "鞘翅耐久低，准备降落", MsgLevel.info);
+            noElytra = true;
+        }
+
+    }
+
     /**
      * 鞘翅主函数
      *
@@ -619,11 +619,11 @@ public class RustElytraTask {
      * @param z      目的地Z坐标
      * @throws TaskThread.TaskException 任务异常
      * @throws TaskThread.TaskCanceled  任务中止
+     * @return 是否到达目的地
      */
-    static void ElytraTask(@NotNull MinecraftClient client, int x, int z, boolean isXP) throws TaskThread.TaskException, TaskThread.TaskCanceled {
+    static boolean ElytraTask(@NotNull MinecraftClient client, int x, int z, boolean isXP) throws TaskThread.TaskException, TaskThread.TaskCanceled {
         // 重置各个状态
         resetStatus();
-
         // 设置baritone
         BaritoneAPI.getSettings().elytraAutoJump.value = false;
         BaritoneAPI.getSettings().logger.value = (var1x -> {
@@ -666,19 +666,20 @@ public class RustElytraTask {
         while (true) {
             if (client.player == null) throw new TaskThread.TaskException("飞行任务失败！null异常！");
             boolean result = RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().isActive());
-            if (!result && !isJumpBlockedByBlock && !isRepairing) {
+            if (!result && !isJumpBlockedByBlock) {
                 // 此时，到达阶段目的地，准备获取补给
                 arrivedTarget(client, segPos);
                 RunAsMainThread(() -> BaritoneAPI.getSettings().logger.value = BaritoneAPI.getSettings().logger.defaultValue);
-                return;
+                return client.player.getBlockPos().isWithinDistance(new BlockPos(x, 0, z), 3501);
             } else {
-                FireworkChecker(client, x, z);
                 baritoneChecker(client);
                 AutoEating(client);
                 AutoEscapeLava(client);
                 AutoJumping(client, x, z);
+                if (currentTick % 5 == 0) FireworkChecker(client, x, z);
                 if (isXP && currentTick % 5 == 0) RepairElytra(client, x, z);
-                if (!arrived && (client.player.getBlockPos().isWithinDistance(new BlockPos(x, 0, z), 3500) || noFirework) && Objects.equals(client.world.getBiome(client.player.getBlockPos()).getKey().map(RegistryKey::getValue).orElse(null), Identifier.of("minecraft", "nether_wastes")) && !client.player.isOnFire()) {
+                if (!isXP && currentTick % 5 == 0) ElytraChecker(client);
+                if (!arrived && (client.player.getBlockPos().isWithinDistance(new BlockPos(x, 0, z), 3500) || noFirework || noElytra) && Objects.equals(client.world.getBiome(client.player.getBlockPos()).getKey().map(RegistryKey::getValue).orElse(null), Identifier.of("minecraft", "nether_wastes")) && !client.player.isOnFire()) {
                     scheduleTask((s6, a6) -> {
                         if (client.player != null)
                             BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().pathTo(client.player.getBlockPos());
