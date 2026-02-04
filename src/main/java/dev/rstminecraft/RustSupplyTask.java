@@ -36,6 +36,9 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 import static dev.rstminecraft.RSTFireballProtect.isHittingFireball;
@@ -69,6 +72,23 @@ public class RustSupplyTask {
             // 模拟按下 W
             client.options.forwardKey.setPressed(true);
             TaskThread.delay(1);
+        }
+    }
+
+    private static void mergeItemInInv(@NotNull MinecraftClient client, Item item, ScreenHandler handler, int slotMin, int slotMax) {
+        if (client.player == null || client.interactionManager == null) throw new TaskThread.TaskException("null");
+        while (true) {
+            List<Integer> l = new ArrayList<>();
+            PlayerInventory inv = client.player.getInventory();
+            for (int i = slotMin; i < slotMax; i++) {
+                ItemStack stack = inv.getStack(i);
+                if (stack.getItem() == item) l.add(i);
+            }
+            l.sort(Comparator.comparingInt(i -> inv.getStack(i).getCount()));
+            if (l.size() < 2 || inv.getStack(l.get(1)).getCount() == inv.getStack(l.get(1)).getMaxCount()) break;
+            client.interactionManager.clickSlot(handler.syncId, l.getFirst(), 0, SlotActionType.PICKUP, client.player);
+            client.interactionManager.clickSlot(handler.syncId, l.getFirst(), 0, SlotActionType.PICKUP_ALL, client.player);
+            client.interactionManager.clickSlot(handler.syncId, l.getFirst(), 0, SlotActionType.PICKUP, client.player);
         }
     }
 
@@ -141,7 +161,6 @@ public class RustSupplyTask {
                     item = stack.getItem();
                 }
             }
-            handled2.close();
 
             // 检查物品栏
             int enderChestCount = 0;
@@ -178,9 +197,13 @@ public class RustSupplyTask {
                 goldenArmor++;
 
 
-            if (enderChestCount > 2 && pickaxe && sword && goldenCarrotCount > 15 && elytra && goldenArmor == 1 && diamondArmor == 2)
-                return;
-            throw new TaskThread.TaskException("没有足够的物资！");
+            if (!(enderChestCount > 2 && pickaxe && sword && goldenCarrotCount > 15 && elytra && goldenArmor == 1 && diamondArmor == 2))
+                throw new TaskThread.TaskException("没有足够的物资！");
+
+            mergeItemInInv(client, Items.FIREWORK_ROCKET, handler2, 9, 36);
+            mergeItemInInv(client, Items.EXPERIENCE_BOTTLE, handler2, 9, 36);
+
+            handled2.close();
         });
     }
 
@@ -360,17 +383,17 @@ public class RustSupplyTask {
      *
      * @param client  客户端对象
      * @param handled 已经打开的末影箱窗口的handled
-     * @param checker 一个lambda,接受潜影盒内容物列表,判断是否符合条件
-     * @return 符合条件的潜影盒所在位置(- 1 代表没有)
+     * @param isXP    是否为XP补给模式
+     * @return 潜影盒拿取列表。
      */
-    private static int SupplyShulkerFinder(@NotNull MinecraftClient client, @NotNull HandledScreen<?> handled, @NotNull ShulkerInnerChecker checker) {
+    private static int[][] SupplyShulkerFinder(@NotNull MinecraftClient client, @NotNull HandledScreen<?> handled, boolean isXP) {
         if (client.player == null) throw new TaskThread.TaskException("player为null");
 
         StringBuilder sb = new StringBuilder();
         int totalSlots = handled.getScreenHandler().slots.size();
         int containerSlots = totalSlots - 36;
         if (containerSlots <= 0) containerSlots = 27;
-        int Slot = -1;
+        int[][] data = new int[27][2];
 
         for (int i = 0; i < containerSlots; i++) {
             Slot s = handled.getScreenHandler().getSlot(i);
@@ -395,13 +418,14 @@ public class RustSupplyTask {
                         }
                         if (isEmpty) sb.append("  (shulker is empty)").append("\n");
                         else {
-                            if (checker.check(inner)) {
-                                // 符合补给盒条件
-                                sb.append("  (slot ").append(i).append(") - valid shulker").append("\n");
-                                sb.append("  Find shulker on slot").append(i).append("\n");
-                                Slot = i;
-                                break;
-                            } else sb.append("  (slot ").append(i).append(") - invalid shulker").append("\n");
+                            sb.append("  (slot ").append(i).append(") - shulker").append("\n");
+
+                            data[i][0] = ShulkerInnerFinder(Items.FIREWORK_ROCKET, inner) / 64;
+                            if (isXP) {
+                                data[i][1] = ShulkerInnerFinder(Items.EXPERIENCE_BOTTLE, inner) / 64;
+                            } else {
+                                data[i][1] = ShulkerInnerFinder(Items.ELYTRA, inner);
+                            }
                         }
 
                     } else {
@@ -413,7 +437,7 @@ public class RustSupplyTask {
 
         // 没找到任何目标物品
         if (sb.isEmpty()) {
-            MsgSender.SendMsg(client.player, "中没有目标物品。", MsgLevel.debug);
+            MsgSender.SendMsg(client.player, "没有目标物品。", MsgLevel.debug);
         } else {
             String[] lines = sb.toString().split("\n");
             for (String line : lines) {
@@ -422,7 +446,7 @@ public class RustSupplyTask {
             }
         }
 
-        return Slot;
+        return data;
     }
 
     /**
@@ -447,27 +471,6 @@ public class RustSupplyTask {
         return num;
     }
 
-    /**
-     * 检查一个潜影盒内容物列表中高耐久度、耐久三附魔的鞘翅数量
-     *
-     * @param inner 潜影盒内容物列表
-     * @return 鞘翅数量
-     */
-    private static int ShulkerElytraFinder(@NotNull DefaultedList<ItemStack> inner) {
-        int num = 0;
-        // 遍历每个物品堆栈
-        for (ItemStack stack : inner) {
-            if (stack.isEmpty()) {
-                continue;  // 跳过空的物品堆栈
-            }
-            // 判断附魔
-            if (stack.getItem() == Items.ELYTRA && stack.getDamage() <= 15 && isStackHasEnchantment(stack, Enchantments.UNBREAKING, 3)) {
-                num += stack.getCount();
-
-            }
-        }
-        return num;
-    }
 
     /**
      * 检测某个stack是否有某个附魔(且等级大于要求)
@@ -513,28 +516,48 @@ public class RustSupplyTask {
      * 从潜影盒窗口中取出补给，特别处理金胡萝卜
      *
      * @param client  客户端对象
-     * @param handler 潜影盒窗口欧handler
+     * @param handler 潜影盒窗口handler
      */
-    private static void PutOutSupply(@NotNull MinecraftClient client, @NotNull ScreenHandler handler) {
+    private static void PutOutSupply(@NotNull MinecraftClient client, @NotNull ScreenHandler handler, List<Integer> replaceList, boolean isXP, int m, int n) {
         RunAsMainThread(() -> {
-            if (client.player == null) throw new TaskThread.TaskException("Player为null");
-
+            if (client.player == null || client.interactionManager == null)
+                throw new TaskThread.TaskException("Player为null");
+            MsgSender.SendMsg(client.player, "本盒需要取出" + m + "组烟花," + n + (isXP ? "组附魔之瓶" : "个鞘翅"), MsgLevel.debug);
+            mergeItemInInv(client, Items.FIREWORK_ROCKET, handler, 0, 27);
+            mergeItemInInv(client, Items.EXPERIENCE_BOTTLE, handler, 0, 27);
+            int a = 0, b = 0;
             for (int i = 0; i < 27; i++) {
-                if (client.interactionManager != null) {
-                    if (handler.getSlot(i).getStack().getItem() == Items.GOLDEN_CARROT) {
-                        for (int j = 0; j < 9; j++) {
-                            ItemStack s = client.player.getInventory().getStack(j);
-                            if (s.getItem() == Items.GOLDEN_CARROT) {
-                                client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
-                                client.interactionManager.clickSlot(handler.syncId, 54 + j, 0, SlotActionType.PICKUP, client.player);
-                                client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
-                                break;
-                            }
+                ItemStack stack = handler.getSlot(i).getStack();
+                if (replaceList.isEmpty()) throw new TaskThread.TaskException("没多余槽位了");
+                if (stack.getItem() == Items.GOLDEN_CARROT) {
+                    for (int j = 0; j < 9; j++) {
+                        ItemStack s = client.player.getInventory().getStack(j);
+                        if (s.getItem() == Items.GOLDEN_CARROT) {
+                            client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
+                            client.interactionManager.clickSlot(handler.syncId, 54 + j, 0, SlotActionType.PICKUP, client.player);
+                            client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
+                            break;
                         }
-                        continue;
                     }
+                    continue;
+                }
+                if (stack.getItem() == Items.FIREWORK_ROCKET && stack.getCount() == stack.getMaxCount() && a < m) {
+                    a++;
+                    int slot = replaceList.removeFirst();
                     client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
-                    client.interactionManager.clickSlot(handler.syncId, 27 + i, 0, SlotActionType.PICKUP, client.player);
+                    client.interactionManager.clickSlot(handler.syncId, 18 + slot, 0, SlotActionType.PICKUP, client.player);
+                    client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
+                } else if (stack.getItem() == Items.EXPERIENCE_BOTTLE && stack.getCount() == stack.getMaxCount() && isXP && b < n) {
+                    b++;
+                    int slot = replaceList.removeFirst();
+                    client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
+                    client.interactionManager.clickSlot(handler.syncId, 18 + slot, 0, SlotActionType.PICKUP, client.player);
+                    client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
+                } else if (stack.getItem() == Items.ELYTRA && !isXP && b < n) {
+                    b++;
+                    int slot = replaceList.removeFirst();
+                    client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
+                    client.interactionManager.clickSlot(handler.syncId, 18 + slot, 0, SlotActionType.PICKUP, client.player);
                     client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
                 }
             }
@@ -644,6 +667,90 @@ public class RustSupplyTask {
         return handled;
     }
 
+    private static int FireworkSupplyChecker(@NotNull MinecraftClient client) {
+        int num = 0;
+        if (client.player == null) throw new TaskThread.TaskException("null");
+        for (int i = 9; i < 36; i++) {
+            ItemStack s = client.player.getInventory().getStack(i);
+            if (s.getItem() == Items.FIREWORK_ROCKET) num += s.getCount();
+        }
+        return num;
+    }
+
+    private static int ElytraSupplyChecker(@NotNull MinecraftClient client, boolean isXP) {
+        int num = 0;
+        if (client.player == null) throw new TaskThread.TaskException("null");
+        for (int i = 9; i < 36; i++) {
+            ItemStack s = client.player.getInventory().getStack(i);
+            if (isXP) {
+                if (s.getItem() == Items.EXPERIENCE_BOTTLE) num += s.getCount();
+            } else {
+                if (s.getItem() == Items.ELYTRA && s.getDamage() <= 15 && isStackHasEnchantment(s, Enchantments.UNBREAKING, 3)) {
+                    num += s.getCount();
+                }
+            }
+        }
+        return num;
+    }
+
+    /**
+     * 使用动态规划，自动找出最简操作方案。
+     *
+     * @param FireworkCount 所需的烟花总数
+     * @param ElytraCount   所需的鞘翅（或附魔之瓶）总数
+     * @param ShulkerData   潜影盒数据，二维数组。ShulkerData[m][0] 表示第m个潜影盒中的烟花数量；ShulkerData[m][1] 表示第m个潜影盒中的鞘翅数量
+     * @return 操作列表（需要拿出的潜影盒列表）
+     */
+    public static List<Integer> ComputeShulker(int FireworkCount, int ElytraCount, int[][] ShulkerData) {
+        int totalBoxes = ShulkerData.length;
+
+        int[][][] dp = new int[FireworkCount + 1][ElytraCount + 1][2];
+        for (int i = 0; i <= FireworkCount; i++) {
+            for (int j = 0; j <= ElytraCount; j++) {
+                dp[i][j][0] = Integer.MAX_VALUE;
+                dp[i][j][1] = 0;
+            }
+        }
+        dp[0][0][0] = 0;
+        dp[0][0][1] = 0;
+
+        for (int i = 0; i < totalBoxes; i++) {
+            int a = ShulkerData[i][0];
+            int b = ShulkerData[i][1];
+
+            // 从后往前更新
+            for (int ca = FireworkCount; ca >= 0; ca--) {
+                for (int cb = ElytraCount; cb >= 0; cb--) {
+                    if (dp[ca][cb][0] == Integer.MAX_VALUE) continue;
+
+                    int na = Math.min(FireworkCount, ca + a);
+                    int nb = Math.min(ElytraCount, cb + b);
+                    int newCount = dp[ca][cb][0] + 1;
+                    int newMask = dp[ca][cb][1] | (1 << i);
+
+                    if (newCount < dp[na][nb][0]) {
+                        dp[na][nb][0] = newCount;
+                        dp[na][nb][1] = newMask;
+                    }
+                }
+            }
+        }
+
+        if (dp[FireworkCount][ElytraCount][0] == Integer.MAX_VALUE) {
+            return new ArrayList<>();
+        }
+
+        int mask = dp[FireworkCount][ElytraCount][1];
+        List<Integer> result = new ArrayList<>();
+        for (int i = 0; i < totalBoxes; i++) {
+            if ((mask & (1 << i)) != 0) {
+                result.add(i);
+            }
+        }
+
+        return result;
+    }
+
     /**
      * 补给主函数
      *
@@ -664,6 +771,13 @@ public class RustSupplyTask {
         SortAndCheckInv(client);
         TaskThread.delay(2);
 
+        int FireworkInNeed = (int) Math.floor(Math.max(isXP ? 23 * 64 - FireworkSupplyChecker(client) : 21 * 64 - FireworkSupplyChecker(client), 0) / 64.0);
+
+        int ElytraInNeed = isXP ? (int) Math.ceil(Math.max(3 * 64 - ElytraSupplyChecker(client, true), 0) / 64.0) : 5 - ElytraSupplyChecker(client, false);
+
+        if(FireworkInNeed == 0 && ElytraInNeed == 0) return;
+
+        MsgSender.SendMsg(client.player, "所需补给:" + FireworkInNeed + "组烟花," + ElytraInNeed + (isXP ? "组附魔之瓶" : "个鞘翅"), MsgLevel.info);
         // 寻找末影箱
         int slot = findItemInHotBar(player, Items.ENDER_CHEST);
         if (slot == -1) throw new TaskThread.TaskException("无末影箱");
@@ -680,93 +794,125 @@ public class RustSupplyTask {
         // 等待末影箱界面
         HandledScreen<?> EnderChestHandled = WaitForScreen(client, EnderChestName);
 
-        // 末影箱打开成功，准备寻找合适补给
-        int SupplySlot = SupplyShulkerFinder(client, EnderChestHandled, (inner) -> isXP ? // 分XP和鞘翅两种模式
-                ShulkerInnerFinder(Items.FIREWORK_ROCKET, inner) >= 23 * 64 && ShulkerInnerFinder(Items.EXPERIENCE_BOTTLE, inner) >= 3 * 64 : // XP模式要求24组烟花和6个鞘翅
-                ShulkerInnerFinder(Items.FIREWORK_ROCKET, inner) >= 21 * 64 && ShulkerElytraFinder(inner) >= 5 // 鞘翅模式要求21组烟花和5个耐久三鞘翅
-        );
-        if (SupplySlot == -1) throw new TaskThread.TaskException("末影箱中没有目标物品");
+        int[][] ShulkerData = SupplyShulkerFinder(client, EnderChestHandled, isXP);
 
-        // 找可以用来放潜影盒的槽位
-        slot = -1;
-        for (int j = 0; j < 9; j++) {
-            ItemStack stack2 = client.player.getInventory().getStack(j);
-            if (stack2.isEmpty() || stack2.getItem() != Items.ENDER_CHEST && stack2.getItem() != Items.DIAMOND_PICKAXE && stack2.getItem() != Items.NETHERITE_PICKAXE && stack2.getItem() != Items.DIAMOND_SWORD && stack2.getItem() != Items.NETHERITE_SWORD && stack2.getItem() != Items.GOLDEN_CARROT && stack2.getItem() != Items.TOTEM_OF_UNDYING) {
-                slot = j;
-                break;
-            }
+        List<Integer> ShulkerList = ComputeShulker(FireworkInNeed, ElytraInNeed, ShulkerData);
+        if (ShulkerList.isEmpty()) throw new TaskThread.TaskException("末影箱中没有目标物品");
+        else if (ShulkerList.size() > 4) throw new TaskThread.TaskException("末影箱中物品过于分散！");
+        else MsgSender.SendMsg(client.player, "所需的潜影盒槽位列表为：" + ShulkerList, MsgLevel.info);
+        List<Integer> replaceSlot = new ArrayList<>();
+        int m = 0, n = 0;
+        for (int i = 9; i < 36; i++) {
+            ItemStack s = client.player.getInventory().getStack(i);
+            if (s.getItem() == Items.FIREWORK_ROCKET) {
+                if (s.getCount() != s.getMaxCount()) continue;
+                if (m < 23) {
+                    m++;
+                    continue;
+                }
+                replaceSlot.add(i);
+            } else if (s.getItem() == Items.EXPERIENCE_BOTTLE && isXP) {
+                if (s.getCount() == s.getMaxCount() && n < 3) {
+                    n++;
+                    continue;
+                }
+                replaceSlot.add(i);
+            } else if (s.getItem() == Items.ELYTRA && !isXP) {
+                if (s.getDamage() < 15 && n < 5) {
+                    n++;
+                    continue;
+                }
+                replaceSlot.add(i);
+            } else replaceSlot.add(i);
         }
-        if (slot == -1) throw new TaskThread.TaskException("没有快捷栏位置可以用于取出潜影盒");
-
-        // 取出潜影盒
-        int ShulkerSlot = slot;
-        RunAsMainThread(() -> {
-            client.interactionManager.clickSlot(EnderChestHandled.getScreenHandler().syncId, SupplySlot, 0, SlotActionType.PICKUP, client.player);
-            client.interactionManager.clickSlot(EnderChestHandled.getScreenHandler().syncId, 54 + ShulkerSlot, 0, SlotActionType.PICKUP, client.player);
-            client.interactionManager.clickSlot(EnderChestHandled.getScreenHandler().syncId, SupplySlot, 0, SlotActionType.PICKUP, client.player);
-            EnderChestHandled.close();
-            return null;
-        });
-        MsgSender.SendMsg(client.player, "取出成功！", MsgLevel.tip);
-
-        TaskThread.delay(5);
-
-        // 找潜影盒名称
-        ItemStack ShulkerStack = client.player.getInventory().getStack(ShulkerSlot);
-        String ShulkerName = ShulkerStack.getComponents().contains(DataComponentTypes.CUSTOM_NAME) ? // 潜影盒名称为“潜影盒”或自定义名称
-                Objects.requireNonNull(ShulkerStack.get(DataComponentTypes.CUSTOM_NAME)).getString() : // 自定义名称
-                Items.SHULKER_BOX.getName().getString(); // “潜影盒”
-
-        // 找空位放置潜影盒
-        BlockPos ShulkerTargetPos = findPlaceTarget(player);
-        if (ShulkerTargetPos == null) throw new TaskThread.TaskException("附近没有合适的位置放置潜影盒");
-
-        // 放置并打开潜影盒
-        PlaceAndOpenContainer(client, ShulkerTargetPos, ShulkerSlot);
+        MsgSender.SendMsg(client.player, "可替换列表为" + replaceSlot, MsgLevel.debug);
         TaskThread.delay(1);
+        for (int SupplySlot : ShulkerList) {
+            // 等待末影箱窗口
+            EnderChestHandled = WaitForScreen(client, EnderChestName);
 
-        // 等待潜影盒窗口
-        HandledScreen<?> ShulkerHandled = WaitForScreen(client, ShulkerName);
 
-        // 拿出补给
-        PutOutSupply(client, ShulkerHandled.getScreenHandler());
-        MsgSender.SendMsg(client.player, "取出补给物品成功", MsgLevel.tip);
+            if (SupplySlot > 26 || SupplySlot < 0) throw new TaskThread.TaskException("所需槽位异常");
+            else MsgSender.SendMsg(client.player, "准备拿出" + SupplySlot, MsgLevel.tip);
+            // 找可以用来放潜影盒的槽位
+            slot = -1;
+            for (int j = 0; j < 9; j++) {
+                ItemStack stack2 = client.player.getInventory().getStack(j);
+                if (stack2.isEmpty() || stack2.getItem() != Items.ENDER_CHEST && stack2.getItem() != Items.DIAMOND_PICKAXE && stack2.getItem() != Items.NETHERITE_PICKAXE && stack2.getItem() != Items.DIAMOND_SWORD && stack2.getItem() != Items.NETHERITE_SWORD && stack2.getItem() != Items.GOLDEN_CARROT && stack2.getItem() != Items.TOTEM_OF_UNDYING) {
+                    slot = j;
+                    break;
+                }
+            }
+            if (slot == -1) throw new TaskThread.TaskException("没有快捷栏位置可以用于取出潜影盒");
 
-        // 取出成功，挖掉潜影盒
-        mineSupplyShulker(client, ShulkerTargetPos);
+            // 取出潜影盒
+            int ShulkerSlot = slot;
+            HandledScreen<?> finalEnderChestHandled = EnderChestHandled;
+            RunAsMainThread(() -> {
+                client.interactionManager.clickSlot(finalEnderChestHandled.getScreenHandler().syncId, SupplySlot, 0, SlotActionType.PICKUP, client.player);
+                client.interactionManager.clickSlot(finalEnderChestHandled.getScreenHandler().syncId, 54 + ShulkerSlot, 0, SlotActionType.PICKUP, client.player);
+                client.interactionManager.clickSlot(finalEnderChestHandled.getScreenHandler().syncId, SupplySlot, 0, SlotActionType.PICKUP, client.player);
+                finalEnderChestHandled.close();
+                return null;
+            });
+            MsgSender.SendMsg(client.player, "取出成功！", MsgLevel.tip);
 
-        MsgSender.SendMsg(client.player, "挖掘完毕，放回末影箱", MsgLevel.tip);
-        // 重新打开末影箱
-        RunAsMainThread(() -> lookAt(client.player, Vec3d.ofCenter(EnderChestTargetPos)));
-        TaskThread.delay(3);
-        OpenContainer(client, EnderChestTargetPos);
+            TaskThread.delay(5);
 
-        // 等待末影箱窗口
-        HandledScreen<?> EnderChestHandled2 = WaitForScreen(client, EnderChestName);
+            // 找潜影盒名称
+            ItemStack ShulkerStack = client.player.getInventory().getStack(ShulkerSlot);
+            String ShulkerName = ShulkerStack.getComponents().contains(DataComponentTypes.CUSTOM_NAME) ? // 潜影盒名称为“潜影盒”或自定义名称
+                    Objects.requireNonNull(ShulkerStack.get(DataComponentTypes.CUSTOM_NAME)).getString() : // 自定义名称
+                    Items.SHULKER_BOX.getName().getString(); // “潜影盒”
 
-        // 放回潜影盒
-        RunAsMainThread(() -> {
-            client.interactionManager.clickSlot(EnderChestHandled2.getScreenHandler().syncId, 54 + ShulkerSlot, 0, SlotActionType.PICKUP, client.player);
-            client.interactionManager.clickSlot(EnderChestHandled2.getScreenHandler().syncId, SupplySlot, 0, SlotActionType.PICKUP, client.player);
-            client.interactionManager.clickSlot(EnderChestHandled2.getScreenHandler().syncId, 54 + ShulkerSlot, 0, SlotActionType.PICKUP, client.player);
-            EnderChestHandled2.close();
-        });
-        MsgSender.SendMsg(client.player, "放回完毕", MsgLevel.tip);
+            // 找空位放置潜影盒
+            BlockPos ShulkerTargetPos = findPlaceTarget(player);
+            if (ShulkerTargetPos == null) throw new TaskThread.TaskException("附近没有合适的位置放置潜影盒");
 
+            // 放置并打开潜影盒
+            PlaceAndOpenContainer(client, ShulkerTargetPos, ShulkerSlot);
+            TaskThread.delay(1);
+
+            // 等待潜影盒窗口
+            HandledScreen<?> ShulkerHandled = WaitForScreen(client, ShulkerName);
+
+            mergeItemInInv(client, Items.FIREWORK_ROCKET, ShulkerHandled.getScreenHandler(), 0, 27);
+            mergeItemInInv(client, Items.EXPERIENCE_BOTTLE, ShulkerHandled.getScreenHandler(), 0, 27);
+            // 拿出补给
+            int shouldPutOutFirework = Math.min(FireworkInNeed, ShulkerData[SupplySlot][0]);
+            int shouldPutOutElytra = Math.min(ElytraInNeed, ShulkerData[SupplySlot][1]);
+            PutOutSupply(client, ShulkerHandled.getScreenHandler(), replaceSlot, isXP, shouldPutOutFirework, shouldPutOutElytra);
+            MsgSender.SendMsg(client.player, "取出补给物品成功", MsgLevel.tip);
+            FireworkInNeed -= shouldPutOutFirework;
+            ElytraInNeed -= shouldPutOutElytra;
+            // 取出成功，挖掉潜影盒
+            mineSupplyShulker(client, ShulkerTargetPos);
+
+            MsgSender.SendMsg(client.player, "挖掘完毕，放回末影箱", MsgLevel.tip);
+            // 重新打开末影箱
+            RunAsMainThread(() -> lookAt(client.player, Vec3d.ofCenter(EnderChestTargetPos)));
+            TaskThread.delay(2);
+            OpenContainer(client, EnderChestTargetPos);
+
+            // 等待末影箱窗口
+            EnderChestHandled = WaitForScreen(client, EnderChestName);
+
+            // 放回潜影盒
+            HandledScreen<?> finalEnderChestHandled1 = EnderChestHandled;
+            RunAsMainThread(() -> {
+
+                client.interactionManager.clickSlot(finalEnderChestHandled1.getScreenHandler().syncId, 54 + ShulkerSlot, 0, SlotActionType.PICKUP, client.player);
+                client.interactionManager.clickSlot(finalEnderChestHandled1.getScreenHandler().syncId, SupplySlot, 0, SlotActionType.PICKUP, client.player);
+                client.interactionManager.clickSlot(finalEnderChestHandled1.getScreenHandler().syncId, 54 + ShulkerSlot, 0, SlotActionType.PICKUP, client.player);
+            });
+            MsgSender.SendMsg(client.player, "放回完毕", MsgLevel.tip);
+            TaskThread.delay(1);
+        }
+        RunAsMainThread(() -> client.setScreen(null));
         // 挖掘末影箱
         mineEnderChest(client, EnderChestTargetPos);
         MsgSender.SendMsg(client.player, "补给任务圆满完成！", MsgLevel.tip);
     }
 
-    // 用于检测潜影盒是否符合条件
-    private interface ShulkerInnerChecker {
-        /**
-         * 检测某个潜影盒是否符合条件
-         *
-         * @param inner 潜影盒内物品列表
-         * @return 是否符合条件
-         */
-        boolean check(DefaultedList<ItemStack> inner);
-    }
 
 }
