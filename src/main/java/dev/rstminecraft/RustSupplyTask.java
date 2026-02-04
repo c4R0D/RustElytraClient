@@ -75,7 +75,7 @@ public class RustSupplyTask {
         }
     }
 
-    private static void mergeItemInInv(@NotNull MinecraftClient client, Item item, ScreenHandler handler, int slotMin, int slotMax) {
+    private static void mergeItemInInv(@NotNull MinecraftClient client, Item item, @NotNull ScreenHandler handler, int slotMin, int slotMax) {
         if (client.player == null || client.interactionManager == null) throw new TaskThread.TaskException("null");
         while (true) {
             List<Integer> l = new ArrayList<>();
@@ -343,10 +343,9 @@ public class RustSupplyTask {
      *
      * @param client        客户端对象
      * @param ContainerName 目标容器名
-     * @param checkNoEmpty  是否检查容器是否为空
      * @return 返回目标屏幕信息(handled, handler, screen)
      */
-    private static @Nullable HandledScreen<?> ContainerScreenChecker(@NotNull MinecraftClient client, @NotNull String ContainerName, boolean checkNoEmpty) {
+    private static @Nullable HandledScreen<?> ContainerScreenChecker(@NotNull MinecraftClient client, @NotNull String ContainerName) {
         Screen screen = client.currentScreen;
         // 不是容器界面
         if (!(screen instanceof HandledScreen<?> handled)) return null;
@@ -355,25 +354,24 @@ public class RustSupplyTask {
         if (!ContainerName.equalsIgnoreCase(handled.getTitle().getString())) return null;
 
         ScreenHandler handler = handled.getScreenHandler();
-        if (checkNoEmpty) {
-            int totalSlots = handler.slots.size();
-            int containerSlots = totalSlots - 36;
-            if (containerSlots <= 0) containerSlots = 27;
-            boolean anyNonEmpty = false;
-            for (int i = 0; i < containerSlots; i++) {
-                Slot s = handler.getSlot(i);
-                if (s != null) {
-                    ItemStack st = s.getStack();
-                    if (st != null && !st.isEmpty()) {
-                        anyNonEmpty = true;
-                        break;
-                    }
+        int totalSlots = handler.slots.size();
+        int containerSlots = totalSlots - 36;
+        if (containerSlots <= 0) containerSlots = 27;
+        boolean anyNonEmpty = false;
+        for (int i = 0; i < containerSlots; i++) {
+            Slot s = handler.getSlot(i);
+            if (s != null) {
+                ItemStack st = s.getStack();
+                if (st != null && !st.isEmpty()) {
+                    anyNonEmpty = true;
+                    break;
                 }
             }
-            if (!anyNonEmpty) {
-                return null;
-            }
         }
+        if (!anyNonEmpty) {
+            return null;
+        }
+
         return handled;
 
     }
@@ -480,7 +478,7 @@ public class RustSupplyTask {
      * @param minLevel    最小等级
      * @return 是否有符合要求的附魔
      */
-    private static boolean isStackHasEnchantment(ItemStack stack, RegistryKey<Enchantment> enchantment, int minLevel) {
+    private static boolean isStackHasEnchantment(@NotNull ItemStack stack, RegistryKey<Enchantment> enchantment, int minLevel) {
         var enchantments = stack.get(DataComponentTypes.ENCHANTMENTS);
         if (enchantments != null) {
             var enc = enchantments.getEnchantments();
@@ -518,7 +516,7 @@ public class RustSupplyTask {
      * @param client  客户端对象
      * @param handler 潜影盒窗口handler
      */
-    private static void PutOutSupply(@NotNull MinecraftClient client, @NotNull ScreenHandler handler, List<Integer> replaceList, boolean isXP, int m, int n) {
+    private static void PutOutSupply(@NotNull MinecraftClient client, @NotNull ScreenHandler handler, @NotNull List<Integer> replaceList, boolean isXP, int m, int n) {
         RunAsMainThread(() -> {
             if (client.player == null || client.interactionManager == null)
                 throw new TaskThread.TaskException("Player为null");
@@ -656,7 +654,7 @@ public class RustSupplyTask {
 
         // 等待界面
         for (int i = 0; i < 20; i++) {
-            HandledScreen<?> temp = ContainerScreenChecker(client, ScreenName, true);
+            HandledScreen<?> temp = ContainerScreenChecker(client, ScreenName);
             if (temp != null) {
                 handled = temp;
                 break;
@@ -701,7 +699,7 @@ public class RustSupplyTask {
      * @param ShulkerData   潜影盒数据，二维数组。ShulkerData[m][0] 表示第m个潜影盒中的烟花数量；ShulkerData[m][1] 表示第m个潜影盒中的鞘翅数量
      * @return 操作列表（需要拿出的潜影盒列表）
      */
-    public static List<Integer> ComputeShulker(int FireworkCount, int ElytraCount, int[][] ShulkerData) {
+    public static @NotNull List<Integer> ComputeShulker(int FireworkCount, int ElytraCount, int[] @NotNull [] ShulkerData) {
         int totalBoxes = ShulkerData.length;
 
         int[][][] dp = new int[FireworkCount + 1][ElytraCount + 1][2];
@@ -775,7 +773,7 @@ public class RustSupplyTask {
 
         int ElytraInNeed = isXP ? (int) Math.ceil(Math.max(3 * 64 - ElytraSupplyChecker(client, true), 0) / 64.0) : 5 - ElytraSupplyChecker(client, false);
 
-        if(FireworkInNeed == 0 && ElytraInNeed == 0) return;
+        if (FireworkInNeed == 0 && ElytraInNeed == 0) return;
 
         MsgSender.SendMsg(client.player, "所需补给:" + FireworkInNeed + "组烟花," + ElytraInNeed + (isXP ? "组附魔之瓶" : "个鞘翅"), MsgLevel.info);
         // 寻找末影箱
