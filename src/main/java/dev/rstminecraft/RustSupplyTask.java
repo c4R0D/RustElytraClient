@@ -391,7 +391,7 @@ public class RustSupplyTask {
         int totalSlots = handled.getScreenHandler().slots.size();
         int containerSlots = totalSlots - 36;
         if (containerSlots <= 0) containerSlots = 27;
-        int[][] data = new int[27][2];
+        int[][] data = new int[27][3];
 
         for (int i = 0; i < containerSlots; i++) {
             Slot s = handled.getScreenHandler().getSlot(i);
@@ -425,6 +425,7 @@ public class RustSupplyTask {
                                 data[i][1] = ShulkerInnerFinder(Items.ELYTRA, inner);
                             }
                         }
+                        data[i][2] = ShulkerInnerFinder(Items.GOLDEN_CARROT,inner);
 
                     } else {
                         sb.append("  (shulker is null...warning...)").append("\n");
@@ -468,7 +469,6 @@ public class RustSupplyTask {
         }
         return num;
     }
-
 
     /**
      * 检测某个stack是否有某个附魔(且等级大于要求)
@@ -824,6 +824,17 @@ public class RustSupplyTask {
             } else replaceSlot.add(i);
         }
         MsgSender.SendMsg(client.player, "可替换列表为" + replaceSlot, MsgLevel.debug);
+        if(client.player.getInventory().getStack(findItemInHotBar(client.player,Items.GOLDEN_CARROT)).getCount() < 30){
+            int slot2 = -1,max = 0;
+            for(int i = 0;i<27;i++){
+                if(ShulkerData[i][2] > max){
+                    slot2 = i;
+                    max = ShulkerData[i][2];
+                }
+            }
+            if(slot2 == -1) MsgSender.SendMsg(client.player,"无可用金胡萝卜！",MsgLevel.warning);
+            else ShulkerList.add(slot2);
+        }
         TaskThread.delay(1);
         for (int SupplySlot : ShulkerList) {
             // 等待末影箱窗口
