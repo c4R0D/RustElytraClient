@@ -5,6 +5,7 @@ package dev.rstminecraft;
 //本模组永不收费，永远开源，许可证相关事项正在考虑。
 
 //文件解释：本文件为模组主文件。
+
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import dev.rstminecraft.utils.MsgLevel;
 import dev.rstminecraft.utils.RSTMsgSender;
@@ -27,7 +28,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import static dev.rstminecraft.utils.RSTConfig.*;
+import static dev.rstminecraft.utils.RSTConfig.getBoolean;
+import static dev.rstminecraft.utils.RSTConfig.loadConfig;
 import static dev.rstminecraft.utils.RSTTask.scheduleTask;
 import static dev.rstminecraft.utils.RSTTask.tick;
 
@@ -56,12 +58,16 @@ public class RustElytraClient implements ClientModInitializer {
                 synchronized (ThreadLock) {
                     ThreadLock.notify();
                 }
-                while (TaskThread.isThreadRunning() && (TaskThread.getModThread().getState() == Thread.State.RUNNABLE || TaskThread.getModThread().getState() == Thread.State.WAITING)) {
-                    TaskHolder<?> task = currentTask.get();
-                    if (task != null) {
-                        task.execute();
-                        currentTask.set(null);
+                try {
+                    while (TaskThread.getModThread() != null && (TaskThread.getModThread().getState() == Thread.State.RUNNABLE || TaskThread.getModThread().getState() == Thread.State.WAITING)) {
+                        TaskHolder<?> task = currentTask.get();
+                        if (task != null) {
+                            task.execute();
+                            currentTask.set(null);
+                        }
                     }
+                } catch (NullPointerException e) {
+                    if (!e.getMessage().contains("TaskThread.getState")) throw e;
                 }
             }
             tick();
@@ -86,7 +92,7 @@ public class RustElytraClient implements ClientModInitializer {
             int targetX = IntegerArgumentType.getInteger(context, "x");
             int targetZ = IntegerArgumentType.getInteger(context, "z");
 
-            if(TaskThread.getModThread() != null) return 0;
+            if (TaskThread.getModThread() != null) return 0;
             MsgSender.SendMsg(client.player, "任务开始！", MsgLevel.warning);
             TaskThread.StartModThread_ELY(getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), targetX, targetZ);
             return 1;

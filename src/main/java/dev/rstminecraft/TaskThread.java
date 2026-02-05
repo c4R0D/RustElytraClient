@@ -118,6 +118,8 @@ public class TaskThread extends Thread {
      * @return 运行结果, 类型不定
      */
     public static <T> T RunAsMainThread(Supplier<T> lambda) {
+        if (Thread.currentThread() != ModThread) return lambda.get();
+
         CountDownLatch latch = new CountDownLatch(1);
         TaskHolder<T> holder = new TaskHolder<>(lambda, latch);
 
@@ -152,6 +154,12 @@ public class TaskThread extends Thread {
      * @param seg    当前段数
      */
     public void taskFailed(@NotNull MinecraftClient client, @NotNull String str, int seg) {
+        MinecraftClient.getInstance().options.forwardKey.setPressed(false);
+        MinecraftClient.getInstance().options.jumpKey.setPressed(false);
+
+        if (BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().isActive() ||
+                BaritoneAPI.getProvider().getPrimaryBaritone().getMineProcess().isActive())
+            RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("stop"));
         if (seg == -1 && isAutoLogOnSeg1 || seg != -1 && isAutoLog) {
             MutableText text = Text.literal("[RSTAutoLog] ");
             text.append(Text.literal(str));
@@ -182,65 +190,70 @@ public class TaskThread extends Thread {
         if (client == null || client.player == null) return;
         ModStatus = ModStatuses.running;
         for (int nowSeg = 0; ; nowSeg++) {
-            MsgSender.SendMsg(client.player,"第"+nowSeg+"段补给任务开始！",MsgLevel.info);
-            // 先开启补给守护任务（防火球、防伤害）
-            float h = client.player.getHealth();
-            int finalNowSeg = nowSeg;
-            RSTTask FireballTask = scheduleTask((self, args) -> {
-                if (!FireballProtector(client)) {
-                    ModStatus = ModStatuses.canceled;
-                    self.repeatTimes = 0;
-                    MsgSender.SendMsg(client.player, "无法拦截火球", MsgLevel.fatal);
-                    taskFailed(client, "补给任务失败！自动退出！", finalNowSeg - 1);
+            try {
+                MsgSender.SendMsg(client.player, "第" + nowSeg + "段补给任务开始！", MsgLevel.info);
+                // 先开启补给守护任务（防火球、防伤害）
+                float h = client.player.getHealth();
+                int finalNowSeg = nowSeg;
+                RSTTask FireballTask = scheduleTask((self, args) -> {
+                    if (!FireballProtector(client)) {
+                        ModStatus = ModStatuses.canceled;
+                        self.repeatTimes = 0;
+                        MsgSender.SendMsg(client.player, "无法拦截火球", MsgLevel.fatal);
+                        taskFailed(client, "补给任务失败！自动退出！", finalNowSeg - 1);
+                        return;
+                    }
+                    if (client.player.getHealth() < h) {
+                        self.repeatTimes = 0;
+                        taskFailed(client, "补给过程受伤！紧急！", finalNowSeg - 1);
+                        ModStatus = ModStatuses.canceled;
+                    }
+                }, 1, -1, 1, 100);
+
+                // 开启补给任务
+                try {
+                    RustSupplyTask.SupplyTask(client, isXP);
+                    synchronized (FireballTask) {
+                        FireballTask.repeatTimes = -2;
+                    }
+                    delay(1);
+                } catch (TaskException e) {
+                    // 补给失败
+                    synchronized (FireballTask) {
+                        FireballTask.repeatTimes = -2;
+                    }
+                    MsgSender.SendMsg(client.player, e.getMessage(), MsgLevel.error);
+                    MsgSender.SendMsg(client.player, "补给任务失败", MsgLevel.fatal);
+                    taskFailed(client, "补给任务失败！自动退出！", nowSeg - 1);
+                    return;
+                } catch (TaskCanceled e) {
+                    synchronized (FireballTask) {
+                        FireballTask.repeatTimes = -2;
+                    }
+                    MsgSender.SendMsg(client.player, "任务中止！", MsgLevel.warning);
                     return;
                 }
-                if (client.player.getHealth() < h) {
-                    self.repeatTimes = 0;
-                    taskFailed(client, "补给过程受伤！紧急！", finalNowSeg - 1);
-                    ModStatus = ModStatuses.canceled;
-                }
-            }, 1, -1, 1, 100);
 
-            // 开启补给任务
-            try {
-                RustSupplyTask.SupplyTask(client, isXP);
-                synchronized (FireballTask) {
-                    FireballTask.repeatTimes = -2;
-                }
-                delay(1);
-            } catch (TaskException e) {
-                // 补给失败
-                synchronized (FireballTask) {
-                    FireballTask.repeatTimes = -2;
-                }
-                MsgSender.SendMsg(client.player, e.getMessage(), MsgLevel.error);
-                MsgSender.SendMsg(client.player, "补给任务失败", MsgLevel.fatal);
-                taskFailed(client, "补给任务失败！自动退出！", nowSeg - 1);
-                return;
-            } catch (TaskCanceled e) {
-                synchronized (FireballTask) {
-                    FireballTask.repeatTimes = -2;
-                }
-                MsgSender.SendMsg(client.player, "任务中止！", MsgLevel.warning);
-                return;
-            }
-
-            MsgSender.SendMsg(client.player,"第"+nowSeg+"段飞行任务开始！",MsgLevel.info);
-            // 开启鞘翅任务
-            try {
-                if (RustElytraTask.ElytraTask(client, this.TargetX, this.TargetZ, isXP)) {
-                    MsgSender.SendMsg(client.player, "到达目的地！圆满完成！！！", MsgLevel.warning);
+                MsgSender.SendMsg(client.player, "第" + nowSeg + "段飞行任务开始！", MsgLevel.info);
+                // 开启鞘翅任务
+                try {
+                    if (RustElytraTask.ElytraTask(client, this.TargetX, this.TargetZ, isXP)) {
+                        MsgSender.SendMsg(client.player, "到达目的地！圆满完成！！！", MsgLevel.warning);
+                        return;
+                    }
+                    delay(1);
+                } catch (TaskException e) {
+                    // 飞行失败
+                    MsgSender.SendMsg(client.player, e.getMessage(), MsgLevel.error);
+                    taskFailed(client, e.getMessage(), nowSeg);
+                    return;
+                } catch (TaskCanceled e) {
+                    MsgSender.SendMsg(client.player, "任务中止！", MsgLevel.warning);
                     return;
                 }
-                delay(1);
-            } catch (TaskException e) {
-                // 飞行失败
-                MsgSender.SendMsg(client.player, e.getMessage(), MsgLevel.error);
-                MsgSender.SendMsg(client.player, "任务失败", MsgLevel.fatal);
-                taskFailed(client, e.getMessage(), nowSeg);
-                return;
-            } catch (TaskCanceled e) {
-                MsgSender.SendMsg(client.player, "任务中止！", MsgLevel.warning);
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+                taskFailed(client,e.getMessage(),nowSeg);
                 return;
             }
         }

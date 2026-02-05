@@ -46,7 +46,7 @@ public class RSTScr extends Screen {
         if (client != null && client.player != null) {
             Text linkText = Text.literal("点击查看Mod指南").styled(style -> style.withColor(Formatting.BLUE).withUnderline(true).withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://elytra.rust3c.top/Rust%20Elytra%20Client%20v1.0.pdf")).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("打开PDF指南"))));
 
-            client.player.sendMessage(linkText);
+            client.player.sendMessage(linkText,false);
             client.player.sendMessage(Text.literal("§4[Rust Elytra]pdf指南链接已经发到聊天框§r"), true);
             client.setScreen(null);
         }
@@ -243,7 +243,11 @@ public class RSTScr extends Screen {
                         return;
                     }
                     if (client == null || client.player == null) return;
-                    if (TaskThread.getModThread() != null) return;
+                    if (TaskThread.getModThread() != null) {
+                        if(TaskThread.getModThread().getState() == Thread.State.TERMINATED)
+                            MsgSender.SendMsg(client.player, "模组遇到线程状态错误，通常重启可解决！", MsgLevel.warning);
+                        return;
+                    }
                     // 开始飞行
                     MsgSender.SendMsg(client.player, "任务开始！", MsgLevel.warning);
                     TaskThread.StartModThread_ELY(getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), x1, z1);
@@ -264,7 +268,11 @@ public class RSTScr extends Screen {
                         return;
                     }
                     if (client == null || client.player == null) return;
-                    if (TaskThread.getModThread() != null) return;
+                    if (TaskThread.getModThread() != null) {
+                        if(TaskThread.getModThread().getState() == Thread.State.TERMINATED)
+                            MsgSender.SendMsg(client.player, "模组遇到线程状态错误，通常重启可解决！", MsgLevel.warning);
+                        return;
+                    }
                     // 开始飞行
                     MsgSender.SendMsg(client.player, "任务开始！", MsgLevel.warning);
                     TaskThread.StartModThread_XP(getBoolean("isAutoLog", true), getBoolean("isAutoLogOnSeg1", false), x1, z1);

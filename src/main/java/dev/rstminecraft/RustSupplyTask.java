@@ -79,13 +79,12 @@ public class RustSupplyTask {
         if (client.player == null || client.interactionManager == null) throw new TaskThread.TaskException("null");
         while (true) {
             List<Integer> l = new ArrayList<>();
-            PlayerInventory inv = client.player.getInventory();
             for (int i = slotMin; i < slotMax; i++) {
-                ItemStack stack = inv.getStack(i);
+                ItemStack stack = handler.getSlot(i).getStack();
                 if (stack.getItem() == item) l.add(i);
             }
-            l.sort(Comparator.comparingInt(i -> inv.getStack(i).getCount()));
-            if (l.size() < 2 || inv.getStack(l.get(1)).getCount() == inv.getStack(l.get(1)).getMaxCount()) break;
+            l.sort(Comparator.comparingInt(i ->  handler.getSlot(i).getStack().getCount()));
+            if (l.size() < 2 ||  handler.getSlot(l.get(1)).getStack().getCount() == handler.getSlot(l.get(1)).getStack().getMaxCount()) break;
             client.interactionManager.clickSlot(handler.syncId, l.getFirst(), 0, SlotActionType.PICKUP, client.player);
             client.interactionManager.clickSlot(handler.syncId, l.getFirst(), 0, SlotActionType.PICKUP_ALL, client.player);
             client.interactionManager.clickSlot(handler.syncId, l.getFirst(), 0, SlotActionType.PICKUP, client.player);
@@ -109,11 +108,7 @@ public class RustSupplyTask {
             // 整理物品栏
             ScreenHandler handler2 = handled2.getScreenHandler();
             for (int i = 9; i < 36; i++) {
-                Slot s = handler2.getSlot(i);
-                if (s == null) continue;
-                ItemStack stack = s.getStack();
-                if (stack == null || stack.isEmpty()) continue;
-                Item item = stack.getItem();
+                Item item = handler2.getSlot(i).getStack().getItem();
                 while (!(item != Items.NETHERITE_PICKAXE && item != Items.DIAMOND_PICKAXE && item != Items.NETHERITE_SWORD && item != Items.DIAMOND_SWORD && item != Items.ENDER_CHEST && item != Items.GOLDEN_CARROT && item != Items.TOTEM_OF_UNDYING)) {
                     if (item == Items.NETHERITE_PICKAXE || item == Items.DIAMOND_PICKAXE) {
                         // 镐放到快捷栏第一格
@@ -137,7 +132,8 @@ public class RustSupplyTask {
                         client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
                         client.interactionManager.clickSlot(handler2.syncId, 38, 0, SlotActionType.PICKUP, player);
                         client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
-                        if (stack.getItem() == Items.ENDER_CHEST) break;
+
+                        if (handler2.getSlot(i).getStack().getItem() == Items.ENDER_CHEST) break;
                     } else if (item == Items.TOTEM_OF_UNDYING) {
                         // 图腾放到第四和第五格
                         if (player.getInventory().getStack(3).getItem() == Items.TOTEM_OF_UNDYING) {
@@ -155,10 +151,10 @@ public class RustSupplyTask {
                         client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
                         client.interactionManager.clickSlot(handler2.syncId, 41, 0, SlotActionType.PICKUP, player);
                         client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
-                        if (stack.getItem() == Items.GOLDEN_CARROT) break;
+                        if (handler2.getSlot(i).getStack().getItem() == Items.GOLDEN_CARROT) break;
 
                     }
-                    item = stack.getItem();
+                    item = handler2.getSlot(i).getStack().getItem();
                 }
             }
 
@@ -197,8 +193,12 @@ public class RustSupplyTask {
                 goldenArmor++;
 
 
-            if (!(enderChestCount > 2 && pickaxe && sword && goldenCarrotCount > 15 && elytra && goldenArmor == 1 && diamondArmor == 2))
-                throw new TaskThread.TaskException("没有足够的物资！");
+            if(enderChestCount <= 2) throw new TaskThread.TaskException("物资不足：至少需要3个末影箱！");
+            if(!pickaxe) throw new TaskThread.TaskException("物资不足：需要有一把 耐久3 效率4或效率5 的钻石或合金镐！");
+            if(!sword) throw new TaskThread.TaskException("物资不足：需要有一把的钻石或合金剑（不要求附魔）！");
+            if(!elytra) throw new TaskThread.TaskException("物资不足：需要穿戴 耐久3 经验修补的鞘翅！");
+            if(goldenCarrotCount <= 15) throw new TaskThread.TaskException("物资不足：需要至少16个金胡萝卜！");
+            if(goldenArmor != 1 || diamondArmor != 2) throw new TaskThread.TaskException("物资不足：需要穿戴有 保护4 推荐含有经验修补和耐久3 的一件金质盔甲和2件合金或钻石盔甲！");
 
             mergeItemInInv(client, Items.FIREWORK_ROCKET, handler2, 9, 36);
             mergeItemInInv(client, Items.EXPERIENCE_BOTTLE, handler2, 9, 36);
@@ -521,6 +521,7 @@ public class RustSupplyTask {
             if (client.player == null || client.interactionManager == null)
                 throw new TaskThread.TaskException("Player为null");
             MsgSender.SendMsg(client.player, "本盒需要取出" + m + "组烟花," + n + (isXP ? "组附魔之瓶" : "个鞘翅"), MsgLevel.debug);
+
             mergeItemInInv(client, Items.FIREWORK_ROCKET, handler, 0, 27);
             mergeItemInInv(client, Items.EXPERIENCE_BOTTLE, handler, 0, 27);
             int a = 0, b = 0;
@@ -795,7 +796,7 @@ public class RustSupplyTask {
         int[][] ShulkerData = SupplyShulkerFinder(client, EnderChestHandled, isXP);
 
         List<Integer> ShulkerList = ComputeShulker(FireworkInNeed, ElytraInNeed, ShulkerData);
-        if (ShulkerList.isEmpty()) throw new TaskThread.TaskException("末影箱中没有目标物品");
+        if (ShulkerList.isEmpty()) throw new TaskThread.TaskException("末影箱中物资不足！");
         else if (ShulkerList.size() > 4) throw new TaskThread.TaskException("末影箱中物品过于分散！");
         else MsgSender.SendMsg(client.player, "所需的潜影盒槽位列表为：" + ShulkerList, MsgLevel.info);
         List<Integer> replaceSlot = new ArrayList<>();

@@ -25,7 +25,6 @@
 		"java": ">=21",
 		"fabric-api": "*",
 		"baritone-meteor" : "*"
-
 	},
 	"suggests": {
 		"another-mod": "*"
