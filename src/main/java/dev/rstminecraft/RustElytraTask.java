@@ -272,7 +272,7 @@ public class RustElytraTask {
         }
 
 
-        if (inFireTick > 20 || inFireTick > 5 && !client.player.isGliding()) {
+        if (inFireTick > 20 || inFireTick > 5 && !client.player.isFallFlying()) {
             // 位于岩浆中？自动逃离岩浆
             inFireTick = -45;
             // 打开鞘翅
@@ -400,7 +400,7 @@ public class RustElytraTask {
         // 自动起跳次数过多，可能遭遇意外情况，auto log
         if (jumpingTimes > 7) throw new TaskThread.TaskException("自动起跳数量过多，可能是baritone异常！");
         // 玩家掉落在地上时自动起跳，继续鞘翅飞行
-        if (!arrived && !isJumping && !isJumpBlockedByBlock && isEating == 0 && client.player.isOnGround() && !client.player.isGliding() && !client.player.isInLava() && client.player.getVelocity().getX() < 0.01 && client.player.getVelocity().getZ() < 0.01) {
+        if (!arrived && !isJumping && !isJumpBlockedByBlock && isEating == 0 && client.player.isOnGround() && !client.player.isFallFlying() && !client.player.isInLava() && client.player.getVelocity().getX() < 0.01 && client.player.getVelocity().getZ() < 0.01) {
             List<BlockPos> bp = RunAsMainThread(() -> getPotentialJumpBlockingBlocks(1));
             if (jumpingTimes > 2) client.player.setYaw(client.player.getYaw() + 180);
             if (!bp.isEmpty()) {
