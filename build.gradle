@@ -50,12 +50,12 @@ fabricApi {
 dependencies {
     // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:1.21.1+build.3:v2"
+    mappings "net.fabricmc:yarn:1.21.4+build.3:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Fabric API. This is technically optional, but you probably want it anyway.
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    modCompileOnly "meteordevelopment:baritone:1.21.1-SNAPSHOT"
+    modCompileOnly "meteordevelopment:baritone:1.21.4-SNAPSHOT"
 
 }
 
