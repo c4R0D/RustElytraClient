@@ -83,8 +83,9 @@ public class RustSupplyTask {
                 ItemStack stack = handler.getSlot(i).getStack();
                 if (stack.getItem() == item) l.add(i);
             }
-            l.sort(Comparator.comparingInt(i ->  handler.getSlot(i).getStack().getCount()));
-            if (l.size() < 2 ||  handler.getSlot(l.get(1)).getStack().getCount() == handler.getSlot(l.get(1)).getStack().getMaxCount()) break;
+            l.sort(Comparator.comparingInt(i -> handler.getSlot(i).getStack().getCount()));
+            if (l.size() < 2 || handler.getSlot(l.get(1)).getStack().getCount() == handler.getSlot(l.get(1)).getStack().getMaxCount())
+                break;
             client.interactionManager.clickSlot(handler.syncId, l.getFirst(), 0, SlotActionType.PICKUP, client.player);
             client.interactionManager.clickSlot(handler.syncId, l.getFirst(), 0, SlotActionType.PICKUP_ALL, client.player);
             client.interactionManager.clickSlot(handler.syncId, l.getFirst(), 0, SlotActionType.PICKUP, client.player);
@@ -193,12 +194,14 @@ public class RustSupplyTask {
                 goldenArmor++;
 
 
-            if(enderChestCount <= 2) throw new TaskThread.TaskException("物资不足：至少需要3个末影箱！");
-            if(!pickaxe) throw new TaskThread.TaskException("物资不足：需要有一把 经验修补吧 耐久3 效率4或效率5 的钻石或合金镐！");
-            if(!sword) throw new TaskThread.TaskException("物资不足：需要有一把的钻石或合金剑（不要求附魔）！");
-            if(!elytra) throw new TaskThread.TaskException("物资不足：需要穿戴 耐久3 经验修补的鞘翅！");
-            if(goldenCarrotCount <= 15) throw new TaskThread.TaskException("物资不足：需要至少16个金胡萝卜！");
-            if(goldenArmor != 1 || diamondArmor != 2) throw new TaskThread.TaskException("物资不足：需要穿戴有 保护4 推荐含有经验修补和耐久3 的一件金质盔甲和2件合金或钻石盔甲！");
+            if (enderChestCount <= 2) throw new TaskThread.TaskException("物资不足：至少需要3个末影箱！");
+            if (!pickaxe)
+                throw new TaskThread.TaskException("物资不足：需要有一把 经验修补吧 耐久3 效率4或效率5 的钻石或合金镐！");
+            if (!sword) throw new TaskThread.TaskException("物资不足：需要有一把的钻石或合金剑（不要求附魔）！");
+            if (!elytra) throw new TaskThread.TaskException("物资不足：需要穿戴 耐久3 经验修补的鞘翅！");
+            if (goldenCarrotCount <= 15) throw new TaskThread.TaskException("物资不足：需要至少16个金胡萝卜！");
+            if (goldenArmor != 1 || diamondArmor != 2)
+                throw new TaskThread.TaskException("物资不足：需要穿戴有 保护4 推荐含有经验修补和耐久3 的一件金质盔甲和2件合金或钻石盔甲！");
 
             mergeItemInInv(client, Items.FIREWORK_ROCKET, handler2, 9, 36);
             mergeItemInInv(client, Items.EXPERIENCE_BOTTLE, handler2, 9, 36);
@@ -425,7 +428,7 @@ public class RustSupplyTask {
                                 data[i][1] = ShulkerInnerFinder(Items.ELYTRA, inner);
                             }
                         }
-                        data[i][2] = ShulkerInnerFinder(Items.GOLDEN_CARROT,inner);
+                        data[i][2] = ShulkerInnerFinder(Items.GOLDEN_CARROT, inner);
 
                     } else {
                         sb.append("  (shulker is null...warning...)").append("\n");
@@ -805,7 +808,7 @@ public class RustSupplyTask {
             ItemStack s = client.player.getInventory().getStack(i);
             if (s.getItem() == Items.FIREWORK_ROCKET) {
                 if (s.getCount() != s.getMaxCount()) continue;
-                if (m < 23) {
+                if (m < (isXP ? 23 : 21)) {
                     m++;
                     continue;
                 }
@@ -825,15 +828,15 @@ public class RustSupplyTask {
             } else replaceSlot.add(i);
         }
         MsgSender.SendMsg(client.player, "可替换列表为" + replaceSlot, MsgLevel.debug);
-        if(client.player.getInventory().getStack(findItemInHotBar(client.player,Items.GOLDEN_CARROT)).getCount() < 30){
-            int slot2 = -1,max = 0;
-            for(int i = 0;i<27;i++){
-                if(ShulkerData[i][2] > max){
+        if (client.player.getInventory().getStack(findItemInHotBar(client.player, Items.GOLDEN_CARROT)).getCount() < 30) {
+            int slot2 = -1, max = 0;
+            for (int i = 0; i < 27; i++) {
+                if (ShulkerData[i][2] > max) {
                     slot2 = i;
                     max = ShulkerData[i][2];
                 }
             }
-            if(slot2 == -1) MsgSender.SendMsg(client.player,"无可用金胡萝卜！",MsgLevel.warning);
+            if (slot2 == -1) MsgSender.SendMsg(client.player, "无可用金胡萝卜！", MsgLevel.warning);
             else ShulkerList.add(slot2);
         }
         TaskThread.delay(1);
