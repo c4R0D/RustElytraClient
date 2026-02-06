@@ -194,7 +194,7 @@ public class RustSupplyTask {
 
 
             if(enderChestCount <= 2) throw new TaskThread.TaskException("物资不足：至少需要3个末影箱！");
-            if(!pickaxe) throw new TaskThread.TaskException("物资不足：需要有一把 耐久3 效率4或效率5 的钻石或合金镐！");
+            if(!pickaxe) throw new TaskThread.TaskException("物资不足：需要有一把 经验修补吧 耐久3 效率4或效率5 的钻石或合金镐！");
             if(!sword) throw new TaskThread.TaskException("物资不足：需要有一把的钻石或合金剑（不要求附魔）！");
             if(!elytra) throw new TaskThread.TaskException("物资不足：需要穿戴 耐久3 经验修补的鞘翅！");
             if(goldenCarrotCount <= 15) throw new TaskThread.TaskException("物资不足：需要至少16个金胡萝卜！");
