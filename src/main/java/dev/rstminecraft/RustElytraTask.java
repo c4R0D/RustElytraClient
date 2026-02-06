@@ -156,7 +156,7 @@ public class RustElytraTask {
 
 
             if (c <= 128 && !noFirework) {
-                if (client.player.getBlockPos().isWithinDistance(segPos, 100000)) {
+                if (!client.player.getBlockPos().isWithinDistance(segPos, 100000)) {
                     noFirework = true;
                     MsgSender.SendMsg(client.player, "烟花不足，提前寻找位置降落！", MsgLevel.info);
                 } else
