@@ -1,32 +1,36 @@
 {
-	"schemaVersion": 1,
-	"id": "rust-elytra-client",
-	"version": "${version}",
-	"name": "RUST Elytra Client",
-	"description": "Rust Elytra Client!",
-	"authors": [
-		"RSTminecraft"
-	],
-	"contact": {
-		"homepage": "https://elytra.rust3c.top/",
-		"sources": "https://github.com/c4R0D/RustElytraClient"
-	},
-	"license": "GPLv3",
-	"icon": "assets/rust-elytra-client/icon.png",
-	"environment": "client",
-	"entrypoints": {
-		"client": [
-			"dev.rstminecraft.RustElytraClient"
-		]
-	},
-	"depends": {
-		"fabricloader": ">=0.16.0",
-		"minecraft": "~1.21.1",
-		"java": ">=21",
-		"fabric-api": "*",
-		"baritone-meteor" : "*"
-	},
-	"suggests": {
-		"another-mod": "*"
-	}
+  "schemaVersion": 1,
+  "id": "rust-elytra-client",
+  "version": "${version}",
+  "name": "RUST Elytra Client",
+  "description": "Rust Elytra Client!",
+  "authors": [
+    "RSTminecraft"
+  ],
+  "contact": {
+    "homepage": "https://elytra.rust3c.top/",
+    "sources": "https://github.com/c4R0D/RustElytraClient"
+  },
+  "license": "GPLv3",
+  "icon": "assets/rust-elytra-client/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.rstminecraft.RustElytraClient"
+    ]
+  },
+  "mixins": [
+    "rst.mixin.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "another-mod": "*",
+    "baritone-meteor": "*",
+    "baritone": "*"
+  }
 }

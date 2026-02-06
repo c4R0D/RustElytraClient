@@ -33,7 +33,6 @@ import static dev.rstminecraft.utils.RSTConfig.loadConfig;
 import static dev.rstminecraft.utils.RSTTask.scheduleTask;
 import static dev.rstminecraft.utils.RSTTask.tick;
 
-
 public class RustElytraClient implements ClientModInitializer {
 
     public static final Logger MODLOGGER = LoggerFactory.getLogger("rust-elytra-client");
@@ -43,9 +42,15 @@ public class RustElytraClient implements ClientModInitializer {
     static RSTMsgSender MsgSender;
     static @NotNull ModStatuses ModStatus = ModStatuses.idle;
     private static KeyBinding openCustomScreenKey;
+    FabricLoader loader = FabricLoader.getInstance();
 
     @Override
     public void onInitializeClient() {
+
+        boolean hasBaritone = loader.isModLoaded("baritone") || loader.isModLoaded("baritone-meteor");
+        if (!hasBaritone) {
+            MODLOGGER.error(" [MyMod] 需要安装 Baritone（baritone / baritone-meteor 任选其一");
+        }
         loadConfig(FabricLoader.getInstance().getConfigDir().resolve("RSTConfig.json"));
         MsgSender = new RSTMsgSender(getBoolean("DisplayDebug", false) ? MsgLevel.debug : MsgLevel.info);
         // GUI按键注册

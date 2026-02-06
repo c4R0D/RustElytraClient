@@ -22,7 +22,6 @@ import static dev.rstminecraft.RustElytraClient.*;
 import static dev.rstminecraft.utils.RSTConfig.getBoolean;
 import static dev.rstminecraft.utils.RSTConfig.setBoolean;
 
-
 public class RSTScr extends Screen {
     // 主菜单相关信息
     // 3行1列
