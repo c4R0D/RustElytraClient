@@ -97,10 +97,9 @@ public class RustElytraTask {
      * 烟花检测、自动补给与烟花、鞘翅消耗量统计
      *
      * @param client 客户端实体
-     * @param x      目的地x坐标
-     * @param z      目的地z坐标
+     * @param segPos 当前段开始地点
      */
-    private static void FireworkChecker(@NotNull MinecraftClient client, int x, int z) {
+    private static void FireworkChecker(@NotNull MinecraftClient client, BlockPos segPos) {
         if (client.player == null || client.interactionManager == null) throw new TaskThread.TaskException("null");
         // 检查玩家烟花数量
         PlayerInventory inv = client.player.getInventory();
@@ -115,9 +114,10 @@ public class RustElytraTask {
         if (slots <= 1) {
             for (int i = 0; i < 9; i++) {
                 ItemStack s = inv.getStack(i);
-                if (s.isEmpty() || s.getItem() != Items.ENDER_CHEST && s.getItem() != Items.DIAMOND_PICKAXE && s.getItem() != Items.NETHERITE_PICKAXE && s.getItem() != Items.DIAMOND_SWORD && s.getItem() != Items.NETHERITE_SWORD && s.getItem() != Items.GOLDEN_CARROT && s.getItem() != Items.TOTEM_OF_UNDYING) replaceList.add(i);
+                if (s.isEmpty() || s.getItem() != Items.ENDER_CHEST && s.getItem() != Items.DIAMOND_PICKAXE && s.getItem() != Items.NETHERITE_PICKAXE && s.getItem() != Items.DIAMOND_SWORD && s.getItem() != Items.NETHERITE_SWORD && s.getItem() != Items.GOLDEN_CARROT && s.getItem() != Items.TOTEM_OF_UNDYING)
+                    replaceList.add(i);
             }
-            if(replaceList.size() <= slots) throw new TaskThread.TaskException("无槽位放置烟花");
+            if (replaceList.size() <= slots) throw new TaskThread.TaskException("无槽位放置烟花");
         }
         if (count < 64) {
             // 烟花数量少，从背包里拿一些
@@ -136,7 +136,7 @@ public class RustElytraTask {
                 if (stack == null || stack.isEmpty()) continue;
                 Item item = stack.getItem();
                 if (item == Items.FIREWORK_ROCKET) {
-                    if(!replaceList.isEmpty()){
+                    if (!replaceList.isEmpty()) {
                         int slot = replaceList.removeFirst();
                         int finalI = i;
                         RunAsMainThread(() -> {
@@ -156,7 +156,7 @@ public class RustElytraTask {
 
 
             if (c <= 128 && !noFirework) {
-                if (client.player.getBlockPos().isWithinDistance(new BlockPos(x, 0, z), 100000)) {
+                if (client.player.getBlockPos().isWithinDistance(segPos, 100000)) {
                     noFirework = true;
                     MsgSender.SendMsg(client.player, "烟花不足，提前寻找位置降落！", MsgLevel.info);
                 } else
@@ -405,7 +405,7 @@ public class RustElytraTask {
             if (jumpingTimes > 2) client.player.setYaw(client.player.getYaw() + 180);
             if (!bp.isEmpty()) {
                 // 玩家头顶有方块阻挡，调用baritone API清除
-                MsgSender.SendMsg(client.player,"头顶有方块阻挡，正在清除障碍",MsgLevel.tip);
+                MsgSender.SendMsg(client.player, "头顶有方块阻挡，正在清除障碍", MsgLevel.tip);
                 isJumpBlockedByBlock = true;
                 RunAsMainThread(() -> {
                     BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("stop");
@@ -415,7 +415,7 @@ public class RustElytraTask {
                     if (client.player == null) return;
                     List<BlockPos> bp2 = RunAsMainThread(() -> getPotentialJumpBlockingBlocks(1));
                     if (!BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess().isActive() || bp2.isEmpty()) {
-                        MsgSender.SendMsg(client.player,"清除完毕",MsgLevel.tip);
+                        MsgSender.SendMsg(client.player, "清除完毕", MsgLevel.tip);
                         oldPos = client.player.getBlockPos();
                         RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().pathTo(new BlockPos(x, 0, z)));
                         scheduleTask((s3, a3) -> isJumpBlockedByBlock = false, 1, 0, 10, 100000000);
@@ -469,7 +469,7 @@ public class RustElytraTask {
                         TaskThread.delay(1);
                     }
                 } else {
-                    MsgSender.SendMsg(client.player,"尝试使用baritone原生起跳",MsgLevel.tip);
+                    MsgSender.SendMsg(client.player, "尝试使用baritone原生起跳", MsgLevel.tip);
                     RunAsMainThread(() -> BaritoneAPI.getSettings().elytraAutoJump.value = true);
                     for (int i = 0; i < 160; i++) {
                         if (client.player.isFallFlying()) {
@@ -712,7 +712,7 @@ public class RustElytraTask {
                 AutoEating(client);
                 AutoEscapeLava(client);
                 AutoJumping(client, x, z);
-                if (currentTick % 5 == 0) FireworkChecker(client, x, z);
+                if (currentTick % 5 == 0) FireworkChecker(client, segPos);
                 if (isXP && currentTick % 5 == 0) RepairElytra(client, x, z);
                 if (!isXP && currentTick % 5 == 0) ElytraChecker(client);
                 if (!arrived && (client.player.getBlockPos().isWithinDistance(new BlockPos(x, 0, z), 3500) || noFirework || noElytra) && Objects.equals(client.world.getBiome(client.player.getBlockPos()).getKey().map(RegistryKey::getValue).orElse(null), Identifier.of("minecraft", "nether_wastes")) && !client.player.isOnFire()) {
