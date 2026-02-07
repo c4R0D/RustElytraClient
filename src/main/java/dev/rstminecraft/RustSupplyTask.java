@@ -97,7 +97,7 @@ public class RustSupplyTask {
      *
      * @param client 客户端对象
      */
-    private static void SortAndCheckInv(@NotNull MinecraftClient client) {
+    private static void SortAndCheckInv(@NotNull MinecraftClient client,boolean isXP) {
         RunAsMainThread(() -> {
             ClientPlayerEntity player = client.player;
             if (player == null || client.interactionManager == null) throw new TaskThread.TaskException("Player为null");
@@ -176,7 +176,7 @@ public class RustSupplyTask {
             int goldenArmor = 0;
             boolean elytra;
             ItemStack s = client.player.getInventory().getArmorStack(2);
-            elytra = isStackHasEnchantment(s, Enchantments.UNBREAKING, 3) && isStackHasEnchantment(s, Enchantments.MENDING, 1);
+            elytra = s.getItem() == Items.ELYTRA && (!isXP || isStackHasEnchantment(s, Enchantments.UNBREAKING, 3)) && isStackHasEnchantment(s, Enchantments.MENDING, 1);
             s = client.player.getInventory().getArmorStack(0);
             if ((s.getItem() == Items.DIAMOND_BOOTS || s.getItem() == Items.NETHERITE_BOOTS) && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
                 diamondArmor++;
@@ -770,7 +770,7 @@ public class RustSupplyTask {
         // 整理物品栏
         ClientPlayerEntity player = client.player;
         if (player == null || client.interactionManager == null) throw new TaskThread.TaskException("player为null");
-        SortAndCheckInv(client);
+        SortAndCheckInv(client ,isXP);
         TaskThread.delay(2);
 
         int FireworkInNeed = (int) Math.floor(Math.max(isXP ? 23 * 64 - FireworkSupplyChecker(client) : 21 * 64 - FireworkSupplyChecker(client), 0) / 64.0);
