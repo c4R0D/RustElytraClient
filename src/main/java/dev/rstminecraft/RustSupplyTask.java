@@ -97,7 +97,7 @@ public class RustSupplyTask {
      *
      * @param client 客户端对象
      */
-    private static void SortAndCheckInv(@NotNull MinecraftClient client,boolean isXP) {
+    private static void SortAndCheckInv(@NotNull MinecraftClient client, boolean isXP) {
         RunAsMainThread(() -> {
             ClientPlayerEntity player = client.player;
             if (player == null || client.interactionManager == null) throw new TaskThread.TaskException("Player为null");
@@ -176,7 +176,7 @@ public class RustSupplyTask {
             int goldenArmor = 0;
             boolean elytra;
             ItemStack s = client.player.getInventory().getArmorStack(2);
-            elytra = s.getItem() == Items.ELYTRA && (!isXP || isStackHasEnchantment(s, Enchantments.UNBREAKING, 3)) && isStackHasEnchantment(s, Enchantments.MENDING, 1);
+            elytra = s.getItem() == Items.ELYTRA && (!isXP || isStackHasEnchantment(s, Enchantments.MENDING, 1)) && isStackHasEnchantment(s, Enchantments.UNBREAKING, 3);
             s = client.player.getInventory().getArmorStack(0);
             if ((s.getItem() == Items.DIAMOND_BOOTS || s.getItem() == Items.NETHERITE_BOOTS) && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
                 diamondArmor++;
@@ -425,7 +425,7 @@ public class RustSupplyTask {
                             if (isXP) {
                                 data[i][1] = ShulkerInnerFinder(Items.EXPERIENCE_BOTTLE, inner) / 64;
                             } else {
-                                data[i][1] = ShulkerInnerFinder(Items.ELYTRA, inner);
+                                data[i][1] = ShulkerElytraFinder(inner);
                             }
                         }
                         data[i][2] = ShulkerInnerFinder(Items.GOLDEN_CARROT, inner);
@@ -467,6 +467,27 @@ public class RustSupplyTask {
             }
             // 判断是否为查找物品
             if (stack.getItem() == item) {
+                num += stack.getCount();
+            }
+        }
+        return num;
+    }
+
+    /**
+     * 在潜影盒内容物列表中寻找目标物品数量
+     *
+     * @param inner 潜影盒内容物列表
+     * @return 物品数量
+     */
+    private static int ShulkerElytraFinder(@NotNull DefaultedList<ItemStack> inner) {
+        int num = 0;
+        // 遍历内存储的每个物品堆栈
+        for (ItemStack stack : inner) {
+            if (stack.isEmpty()) {
+                continue;  // 跳过空的物品堆栈
+            }
+            // 判断是否为查找物品
+            if (stack.getItem() == Items.ELYTRA && isStackHasEnchantment(stack, Enchantments.UNBREAKING, 3) && stack.getDamage() < 15) {
                 num += stack.getCount();
             }
         }
@@ -555,7 +576,7 @@ public class RustSupplyTask {
                     client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
                     client.interactionManager.clickSlot(handler.syncId, 18 + slot, 0, SlotActionType.PICKUP, client.player);
                     client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
-                } else if (stack.getItem() == Items.ELYTRA && !isXP && b < n) {
+                } else if (stack.getItem() == Items.ELYTRA && !isXP && b < n && isStackHasEnchantment(stack,Enchantments.UNBREAKING,3) && stack.getDamage() < 15) {
                     b++;
                     int slot = replaceList.removeFirst();
                     client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
@@ -770,7 +791,7 @@ public class RustSupplyTask {
         // 整理物品栏
         ClientPlayerEntity player = client.player;
         if (player == null || client.interactionManager == null) throw new TaskThread.TaskException("player为null");
-        SortAndCheckInv(client ,isXP);
+        SortAndCheckInv(client, isXP);
         TaskThread.delay(2);
 
         int FireworkInNeed = (int) Math.floor(Math.max(isXP ? 23 * 64 - FireworkSupplyChecker(client) : 21 * 64 - FireworkSupplyChecker(client), 0) / 64.0);
@@ -820,7 +841,7 @@ public class RustSupplyTask {
                 }
                 replaceSlot.add(i);
             } else if (s.getItem() == Items.ELYTRA && !isXP) {
-                if (s.getDamage() < 15 && n < 5) {
+                if (s.getDamage() < 15 && n < 5 && isStackHasEnchantment(s,Enchantments.UNBREAKING,3)) {
                     n++;
                     continue;
                 }

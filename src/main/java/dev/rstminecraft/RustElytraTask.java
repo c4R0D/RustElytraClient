@@ -21,8 +21,10 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.ChunkStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,8 +33,7 @@ import java.util.*;
 import static com.mojang.text2speech.Narrator.LOGGER;
 import static dev.rstminecraft.RSTFireballProtect.FireballProtector;
 import static dev.rstminecraft.RustElytraClient.*;
-import static dev.rstminecraft.TaskThread.RunAsMainThread;
-import static dev.rstminecraft.TaskThread.delay;
+import static dev.rstminecraft.TaskThread.*;
 import static dev.rstminecraft.utils.RSTTask.scheduleTask;
 
 
@@ -240,7 +241,7 @@ public class RustElytraTask {
                 isEating = 0;
                 if (client.interactionManager != null)
                     RunAsMainThread(() -> client.interactionManager.stopUsingItem(client.player));
-            } else if (isEating == 40) {
+            } else if (isEating == 35) {
                 client.options.useKey.setPressed(false);
                 isEating = 0;
             }
@@ -381,6 +382,11 @@ public class RustElytraTask {
                     nonAirBlocks.add(pos);
                 }
             }
+            for (int i = checkY; i < 0; i++) {
+                if (world.isInBuildLimit(pos.add(0, i, 0)) && !world.isAir(pos.add(0, i, 0))) {
+                    nonAirBlocks.add(pos);
+                }
+            }
         }
 
         return nonAirBlocks;
@@ -502,6 +508,28 @@ public class RustElytraTask {
             }
 
         }
+    }
+
+    private static float calculateUnloadedChunks(@NotNull MinecraftClient client, @NotNull ClientPlayerEntity player) {
+        ChunkPos centerChunk = new ChunkPos(player.getBlockPos());
+        if (client.world == null) return 1;
+        int totalChunks = 0;
+        int unloadedChunks = 0;
+        int RenderChunk = client.options.getClampedViewDistance();
+        // 检查周围区块
+        for (int dx = -RenderChunk; dx <= RenderChunk; dx++) {
+            for (int dz = -RenderChunk; dz <= RenderChunk; dz++) {
+                totalChunks++;
+                ChunkPos chunkPos = new ChunkPos(centerChunk.x + dx, centerChunk.z + dz);
+
+                // 检查区块是否已加载
+                if (client.world.getChunk(chunkPos.x, chunkPos.z, ChunkStatus.FULL, false) == null) {
+                    unloadedChunks++;
+                }
+            }
+        }
+
+        return totalChunks > 0 ? (float) unloadedChunks / totalChunks : 0;
     }
 
     /**
@@ -660,6 +688,7 @@ public class RustElytraTask {
     static boolean ElytraTask(@NotNull MinecraftClient client, int x, int z, boolean isXP) throws TaskThread.TaskException, TaskThread.TaskCanceled {
         // 重置各个状态
         resetStatus();
+        MODLOGGER.error("{}", client.options.getClampedViewDistance());
         // 设置baritone
         BaritoneAPI.getSettings().elytraAutoJump.value = false;
         BaritoneAPI.getSettings().logger.value = (var1x -> {
@@ -701,7 +730,7 @@ public class RustElytraTask {
         // 鞘翅守护任务
         while (true) {
             if (client.player == null) throw new TaskThread.TaskException("飞行任务失败！null异常！");
-            boolean result = RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().isActive());
+            boolean result = RunAsMainThread2(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().isActive());
             if (!result && !isJumpBlockedByBlock) {
                 // 此时，到达阶段目的地，准备获取补给
                 arrivedTarget(client, segPos);
@@ -712,6 +741,28 @@ public class RustElytraTask {
                 AutoEating(client);
                 AutoEscapeLava(client);
                 AutoJumping(client, x, z);
+                if (currentTick % 10 == 0) {
+                    float a = calculateUnloadedChunks(client, client.player);
+                    MsgSender.SendMsg(client.player, "未加载区块比例：" + a, MsgLevel.debug);
+                    if (a > 0.4 && getPotentialJumpBlockingBlocks(-6).isEmpty()) {
+                        MsgSender.SendMsg(client.player, "未加载区块太多，暂停baritone等待加载，接下来可能出现视角剧烈晃动！请不要直视屏幕！", MsgLevel.warning);
+                        RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("p"));
+                        cameraMixinSwitch = true;
+                        int tick = currentTick;
+                        while (calculateUnloadedChunks(client, client.player) > 0.05 && getPotentialJumpBlockingBlocks(-2).isEmpty()) {
+                            fixedYaw = client.player.getYaw() + (180 * ((currentTick - tick) % 2));
+                            fixedPitch = 0;
+                            RunAsMainThread(() -> {
+                                client.player.setPitch(0);
+                                client.player.setYaw(client.player.getYaw() + 180);
+                            });
+                            TaskThread.delay(1);
+                        }
+                        cameraMixinSwitch = false;
+                        if ((currentTick - tick) % 2 == 1) client.player.setYaw(client.player.getYaw() + 180);
+                        RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("r"));
+                    }
+                }
                 if (currentTick % 5 == 0) FireworkChecker(client, segPos);
                 if (isXP && currentTick % 5 == 0) RepairElytra(client, x, z);
                 if (!isXP && currentTick % 5 == 0) ElytraChecker(client);

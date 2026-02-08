@@ -17,6 +17,7 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.jetbrains.annotations.NotNull;
@@ -43,10 +44,11 @@ public class RustElytraClient implements ClientModInitializer {
     static @NotNull ModStatuses ModStatus = ModStatuses.idle;
     private static KeyBinding openCustomScreenKey;
     FabricLoader loader = FabricLoader.getInstance();
+    public static boolean cameraMixinSwitch = false;
+    public static float fixedYaw = 0f,fixedPitch = 0f;
 
     @Override
     public void onInitializeClient() {
-
         boolean hasBaritone = loader.isModLoaded("baritone") || loader.isModLoaded("baritone-meteor");
         if (!hasBaritone) {
             MODLOGGER.error(" [MyMod] 需要安装 Baritone（baritone / baritone-meteor 任选其一");
@@ -64,7 +66,7 @@ public class RustElytraClient implements ClientModInitializer {
                     ThreadLock.notify();
                 }
                 try {
-                    while (TaskThread.getModThread() != null && (TaskThread.getModThread().getState() == Thread.State.RUNNABLE || TaskThread.getModThread().getState() == Thread.State.WAITING)) {
+                    while (TaskThread.getModThread() != null && !(TaskThread.getModThread().getState() == Thread.State.TERMINATED || TaskThread.getModThread().getState() == Thread.State.TIMED_WAITING)) {
                         TaskHolder<?> task = currentTask.get();
                         if (task != null) {
                             task.execute();

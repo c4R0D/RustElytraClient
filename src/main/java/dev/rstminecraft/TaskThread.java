@@ -133,6 +133,22 @@ public class TaskThread extends Thread {
             throw new TaskException("任务执行异常");
         }
     }
+    public static <T> T RunAsMainThread2(Supplier<T> lambda) {
+        if (Thread.currentThread() != ModThread) return lambda.get();
+
+        CountDownLatch latch = new CountDownLatch(1);
+        TaskHolder<T> holder = new TaskHolder<>(lambda, latch);
+
+        if (!currentTask.compareAndSet(null, holder)) {
+            throw new TaskException("同时只能存在一个任务");
+        }
+        try {
+            latch.await();
+            return holder.getResult();
+        } catch (InterruptedException e) {
+            throw new TaskException("任务执行异常");
+        }
+    }
 
     /**
      * 用于在主线程执行一个无参数无返回值的lambda(Runnable)
@@ -239,6 +255,14 @@ public class TaskThread extends Thread {
                 try {
                     if (RustElytraTask.ElytraTask(client, this.TargetX, this.TargetZ, isXP)) {
                         MsgSender.SendMsg(client.player, "到达目的地！圆满完成！！！", MsgLevel.warning);
+                        if(isAutoLog) {
+                            MutableText text = Text.literal("[RSTAutoLog] ");
+                            text.append(Text.literal("已经到达目的地"));
+                            if (client.player != null) {
+                                client.player.networkHandler.onDisconnect(new DisconnectS2CPacket(text));
+                            }
+                        }
+                        ModStatus = ModStatuses.idle;
                         return;
                     }
                     delay(1);

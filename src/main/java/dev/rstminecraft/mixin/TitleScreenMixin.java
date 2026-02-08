@@ -21,8 +21,17 @@ public class TitleScreenMixin extends Screen {
     private void onInit(CallbackInfo ci) {
         // 检测是否安装了 Baritone
         boolean baritonePresent = FabricLoader.getInstance().isModLoaded("baritone") || FabricLoader.getInstance().isModLoaded("baritone-meteor");
+        if (!baritonePresent)
+            MinecraftClient.getInstance().setScreen(new NoBaritone(NoBaritone.NoBaritoneReason.NoModId, true));
 
-        if (!baritonePresent) MinecraftClient.getInstance().setScreen(new NoBaritone());
+        boolean hasAPI = true;
+        try {
+            Class.forName("baritone.api.BaritoneAPI", false, getClass().getClassLoader());
+        } catch (ClassNotFoundException e) {
+            hasAPI = false;
+        }
+
+        if (!hasAPI) MinecraftClient.getInstance().setScreen(new NoBaritone(NoBaritone.NoBaritoneReason.NoAPI, true));
 
     }
 }

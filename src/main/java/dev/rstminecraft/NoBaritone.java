@@ -5,37 +5,66 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
-public class NoBaritone extends Screen {
 
-    public NoBaritone() {
+public class NoBaritone extends Screen {
+    private final NoBaritoneReason reason;
+    private final boolean mustQuit;
+
+    public NoBaritone(NoBaritoneReason reason, boolean mustQuit) {
         super(Text.literal("缺少核心依赖"));
+        this.reason = reason;
+        this.mustQuit = mustQuit;
     }
 
     @Override
     protected void init() {
-        // 添加一个“退出游戏”按钮或“我已知晓”按钮
-        this.addDrawableChild(ButtonWidget.builder(Text.literal("退出游戏"),
-                        button -> {
-                            if (this.client != null) {
-                                this.client.scheduleStop();
-                            }
-                        })
-                .dimensions(this.width / 2 - 100, this.height / 2 + 20, 200, 20)
-                .build());
+        if (mustQuit)
+            // 添加一个“退出游戏”按钮
+            this.addDrawableChild(ButtonWidget.builder(Text.literal("退出游戏"), button -> {
+                if (this.client != null) {
+                    this.client.scheduleStop();
+                }
+            }).dimensions(this.width / 2 - 100, this.height / 2 + 20, 200, 20).build());
+        else {
+            this.addDrawableChild(ButtonWidget.builder(Text.literal("退出游戏"), button -> {
+                if (this.client != null) {
+                    this.client.scheduleStop();
+                }
+            }).dimensions(this.width / 3 - 60, this.height / 2 + 20, 120, 20).build());
+            this.addDrawableChild(ButtonWidget.builder(Text.literal("退出游戏"), button -> {
+                if (this.client != null) {
+                    this.client.scheduleStop();
+                }
+            }).dimensions(this.width / 3 * 2 - 60, this.height / 2 + 20, 120, 20).build());
+        }
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         this.renderBackground(context, mouseX, mouseY, delta);
         super.render(context, mouseX, mouseY, delta);
-        context.drawCenteredTextWithShadow(this.textRenderer, "Rust Elytra Client 未检测到 Baritone 模组！", this.width / 2, this.height / 2 - 50, 0xFFFFFF);
-        context.drawCenteredTextWithShadow(this.textRenderer, "请安装原生 Baritone 或 Meteor 版以运行模组！", this.width / 2, this.height / 2 - 30, 0xAAAAAA);
-        context.drawCenteredTextWithShadow(this.textRenderer, "手机版用户可使用BaritonePE。（详见QQ群）", this.width / 2, this.height / 2 - 10, 0xAAAAAA);
+        switch (reason) {
+            case NoModId -> {
+                context.drawCenteredTextWithShadow(this.textRenderer, "Rust Elytra Client 未检测到 Baritone 模组！", this.width / 2, this.height / 2 - 50, 0xFFFFFF);
+                context.drawCenteredTextWithShadow(this.textRenderer, "请安装原生 Baritone 或 Meteor 版以运行模组！", this.width / 2, this.height / 2 - 30, 0xAAAAAA);
+                context.drawCenteredTextWithShadow(this.textRenderer, "手机版用户可使用BaritonePE。（详见QQ群）", this.width / 2, this.height / 2 - 10, 0xAAAAAA);
+            }
+            case NoAPI -> {
+                context.drawCenteredTextWithShadow(this.textRenderer, "您似乎使用了错误的Baritone(Standalone版本)", this.width / 2, this.height / 2 - 50, 0xFFFFFF);
+                context.drawCenteredTextWithShadow(this.textRenderer, "此版本不包含可供模组调用的API,请使用API版、unoptimized版或彗星版", this.width / 2, this.height / 2 - 30, 0xAAAAAA);
+                context.drawCenteredTextWithShadow(this.textRenderer, "若您不确定应该用哪个版本，请使用QQ群文件中的推荐版", this.width / 2, this.height / 2 - 10, 0xAAAAAA);
+            }
+        }
+
 
     }
 
     @Override
     public boolean shouldCloseOnEsc() {
-        return false; // 强制玩家必须处理，按 ESC 不会关闭
+        return !mustQuit;
+    }
+
+    public enum NoBaritoneReason {
+        NoModId, NoAPI
     }
 }
