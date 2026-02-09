@@ -44,7 +44,7 @@ class RSTFireballProtect {
             return new ArrayList<>();
         }
         Vec3d playerPos = client.player.getPos();
-        double Range = client.player.getAttributeValue(EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE) + 0.8;
+        double Range = client.player.getAttributeValue(EntityAttributes.ENTITY_INTERACTION_RANGE) + 0.8;
         Box detectionBox = new Box(
                 playerPos.x - Range,
                 playerPos.y - Range,
