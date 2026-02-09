@@ -38,7 +38,7 @@ public class RustElytraClient implements ClientModInitializer {
     public static final Logger MODLOGGER = LoggerFactory.getLogger("rust-elytra-client");
     public static final AtomicReference<TaskHolder<?>> currentTask = new AtomicReference<>();
     static final Object ThreadLock = new Object();
-    public static int currentTick = 0;
+    public static int currentTick = 1;
     static RSTMsgSender MsgSender;
     static @NotNull ModStatuses ModStatus = ModStatuses.idle;
     private static KeyBinding openCustomScreenKey;
