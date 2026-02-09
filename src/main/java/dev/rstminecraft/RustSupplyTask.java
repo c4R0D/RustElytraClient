@@ -45,6 +45,7 @@ import static dev.rstminecraft.RSTFireballProtect.isHittingFireball;
 import static dev.rstminecraft.RustElytraClient.MsgSender;
 import static dev.rstminecraft.RustElytraClient.timerMultiplier;
 import static dev.rstminecraft.TaskThread.RunAsMainThread;
+import static dev.rstminecraft.utils.RSTConfig.getBoolean;
 
 
 public class RustSupplyTask {
@@ -195,13 +196,15 @@ public class RustSupplyTask {
                 goldenArmor++;
 
 
+
             if (enderChestCount <= 2) throw new TaskThread.TaskException("物资不足：至少需要3个末影箱！");
             if (!pickaxe)
                 throw new TaskThread.TaskException("物资不足：需要有一把 经验修补吧 耐久3 效率4或效率5 的钻石或合金镐！");
             if (!sword) throw new TaskThread.TaskException("物资不足：需要有一把的钻石或合金剑（不要求附魔）！");
             if (!elytra) throw new TaskThread.TaskException("物资不足：需要穿戴 耐久3 经验修补的鞘翅！");
             if (goldenCarrotCount <= 15) throw new TaskThread.TaskException("物资不足：需要至少16个金胡萝卜！");
-            if (goldenArmor != 1 || diamondArmor != 2)
+
+            if (getBoolean("inspectArmor",true) && (goldenArmor != 1 || diamondArmor != 2))
                 throw new TaskThread.TaskException("物资不足：需要穿戴有 保护4 推荐含有经验修补和耐久3 的一件金质盔甲和2件合金或钻石盔甲！");
 
             mergeItemInInv(client, Items.FIREWORK_ROCKET, handler2, 9, 36);

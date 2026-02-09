@@ -45,7 +45,7 @@ public class RSTScr extends Screen {
         if (client != null && client.player != null) {
             Text linkText = Text.literal("点击查看Mod指南").styled(style -> style.withColor(Formatting.BLUE).withUnderline(true).withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://elytra.rust3c.top/Rust%20Elytra%20Client%20v1.0.pdf")).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("打开PDF指南"))));
 
-            client.player.sendMessage(linkText,false);
+            client.player.sendMessage(linkText, false);
             client.player.sendMessage(Text.literal("§4[Rust Elytra]pdf指南链接已经发到聊天框§r"), true);
             client.setScreen(null);
         }
@@ -109,12 +109,7 @@ public class RSTScr extends Screen {
     }
 
     @Override
-    protected void init() {
-        realInit();
-    }
-
-    private void realInit() {
-        // 转换为屏幕控件
+    protected void init() {// 转换为屏幕控件
         ClickableWidget[] mainWidget = EntryToWidget(MainEntry, MainButtonsRow, MainButtonsCol, buttonWidth, width, height, textRenderer);
 
         if (firstUse) {
@@ -123,7 +118,7 @@ public class RSTScr extends Screen {
                 setBoolean("FirstUse", false);
                 remove(button1);
                 firstUse = false;
-                realInit();
+                init();
             }).dimensions(width / 2 - 205, 120, 200, 20).tooltip(Tooltip.of(Text.literal("阅读完毕指南"))).build();
             addDrawableChild(button1);
         } else if (ModStatus != ModStatuses.idle) {
@@ -143,12 +138,9 @@ public class RSTScr extends Screen {
         }
     }
 
+
     @Override
     public void render(@NotNull DrawContext context, int mouseX, int mouseY, float delta) {
-        realRender(context, mouseX, mouseY, delta);
-    }
-
-    private void realRender(@NotNull DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         context.drawTextWithShadow(textRenderer, "欢迎使用RSTAutoElytraMod", width / 3 * 2, 20, 16777215);
         // 渲染提示信息
@@ -243,7 +235,7 @@ public class RSTScr extends Screen {
                     }
                     if (client == null || client.player == null) return;
                     if (TaskThread.getModThread() != null) {
-                        if(TaskThread.getModThread().getState() == Thread.State.TERMINATED)
+                        if (TaskThread.getModThread().getState() == Thread.State.TERMINATED)
                             MsgSender.SendMsg(client.player, "模组遇到线程状态错误，通常重启可解决！", MsgLevel.warning);
                         return;
                     }
@@ -268,7 +260,7 @@ public class RSTScr extends Screen {
                     }
                     if (client == null || client.player == null) return;
                     if (TaskThread.getModThread() != null) {
-                        if(TaskThread.getModThread().getState() == Thread.State.TERMINATED)
+                        if (TaskThread.getModThread().getState() == Thread.State.TERMINATED)
                             MsgSender.SendMsg(client.player, "模组遇到线程状态错误，通常重启可解决！", MsgLevel.warning);
                         return;
                     }
@@ -287,10 +279,6 @@ public class RSTScr extends Screen {
 
         @Override
         protected void init() {
-            realInit();
-        }
-
-        private void realInit() {
             // 将组件转换为屏幕控件
             ClickableWidget[] ciWidget = EntryToWidget(ciEntry, ciButtonsRow, ciButtonsCol, buttonWidth, width, height, textRenderer);
             for (ClickableWidget i : ciWidget) {
@@ -310,12 +298,11 @@ public class RSTScr extends Screen {
     // 设置屏幕
     private static class SettingsSrc extends Screen {
         // 5行一列
-        private static final int SettingsButtonsRow = 3;
+        private static final int SettingsButtonsRow = 4;
         private static final int SettingsButtonsCol = 1;
         private final Screen parent;
         private final int buttonWidth;
         private ClickableWidget @NotNull [] SettingsWidget = new ClickableWidget[SettingsButtonsCol * SettingsButtonsRow];
-        private SrcEntry[] SettingsEntry;
 
         public SettingsSrc(Screen parent) {
             super(Text.literal("RST Auto Elytra Mod Settings Menu"));
@@ -327,7 +314,7 @@ public class RSTScr extends Screen {
             for (ClickableWidget i : SettingsWidget) {
                 remove(i);
             }
-            SettingsEntry = new SrcEntry[]{new SrcButtonEntry("自动退出:" + (getBoolean("isAutoLog", true) ? "开" : "关"), "在任务失败时是否自动退出服务器", () -> {
+            SrcEntry[] settingsEntry = new SrcEntry[]{new SrcButtonEntry("自动退出:" + (getBoolean("isAutoLog", true) ? "开" : "关"), "在任务失败时是否自动退出服务器", () -> {
                 setBoolean("isAutoLog", !getBoolean("isAutoLog", true));
                 BuildButtons();
             }), new SrcButtonEntry("第一段自动退出:" + (getBoolean("isAutoLogOnSeg1", false) ? "开" : "关"), "在任务刚开始时若失败是否自动退出。假如否，您可以避免在第一次补给时因“末影箱中没有补给物品”等简单原因自动退出（造成时间浪费），但请确保第一次补给成功后再离开电脑", () -> {
@@ -337,40 +324,113 @@ public class RSTScr extends Screen {
                 setBoolean("DisplayDebug", !getBoolean("DisplayDebug", false));
                 MsgSender = new RSTMsgSender(getBoolean("DisplayDebug", false) ? MsgLevel.debug : MsgLevel.info);
                 BuildButtons();
+            }), new SrcButtonEntry("高级设置", "仅供调试用的高级设置。请不要轻易更改！", () -> {
+                if (client != null) {
+                    client.setScreen(new AdvancedSettingsWarningSrc(client.currentScreen));
+                }
             })};
 
-            SettingsWidget = EntryToWidget(SettingsEntry, SettingsButtonsRow, SettingsButtonsCol, buttonWidth, width, height, textRenderer);
+            SettingsWidget = EntryToWidget(settingsEntry, SettingsButtonsRow, SettingsButtonsCol, buttonWidth, width, height, textRenderer);
             for (ClickableWidget i : SettingsWidget) {
                 addDrawableChild(i);
             }
-
-
         }
 
         @Override
         protected void init() {
-            realInit();
+            BuildButtons();
         }
 
-        private void realInit() {
-            SettingsEntry = new SrcEntry[]{new SrcButtonEntry("自动退出:" + (getBoolean("isAutoLog", true) ? "开" : "关"), "在任务失败时是否自动退出服务器", () -> {
-                setBoolean("isAutoLog", !getBoolean("isAutoLog", true));
-                BuildButtons();
-            }), new SrcButtonEntry("第一段自动退出:" + (getBoolean("isAutoLogOnSeg1", false) ? "开" : "关"), "在任务刚开始时若失败是否自动退出。假如否，您可以避免在第一次补给时因“末影箱中没有补给物品”等简单原因自动退出（造成时间浪费），但请确保第一次补给成功后再离开电脑", () -> {
-                setBoolean("isAutoLogOnSeg1", !getBoolean("isAutoLogOnSeg1", false));
-                BuildButtons();
-            }), new SrcButtonEntry("发送调试信息:" + (getBoolean("DisplayDebug", false) ? "开" : "关"), "是否发送调试信息", () -> {
-                setBoolean("DisplayDebug", !getBoolean("DisplayDebug", false));
-                MsgSender = new RSTMsgSender(getBoolean("DisplayDebug", false) ? MsgLevel.debug : MsgLevel.info);
-                BuildButtons();
-            })};
+        @Override
+        public void close() {
+            if (client != null) {
+                client.setScreen(parent);
+            }
+        }
+    }
 
-            SettingsWidget = EntryToWidget(SettingsEntry, SettingsButtonsRow, SettingsButtonsCol, buttonWidth, width, height, textRenderer);
+
+    // 高级设置屏幕
+    private static class AdvancedSettingsSrc extends Screen {
+        // 5行一列
+        private static final int SettingsButtonsRow = 2;
+        private static final int SettingsButtonsCol = 1;
+        private final Screen parent;
+        private final int buttonWidth;
+        private ClickableWidget @NotNull [] SettingsWidget = new ClickableWidget[SettingsButtonsCol * SettingsButtonsRow];
+
+        public AdvancedSettingsSrc(Screen parent) {
+            super(Text.literal("RST Auto Elytra Mod Settings Menu"));
+            this.parent = parent;
+            this.buttonWidth = Math.max(100, Math.min(300, (int) (this.width * 0.3)));
+        }
+
+        private void BuildButtons() {
+            for (ClickableWidget i : SettingsWidget) {
+                remove(i);
+            }
+            SrcEntry[] settingsEntry = new SrcEntry[]{new SrcButtonEntry("检查盔甲:" + (getBoolean("inspectArmor", true) ? "开" : "关"), "是否检查盔甲。关闭本开关后,即使您没有足够装备,也可以开始飞行。警告：没有足够的装备就开始飞行十分危险!除非遭遇非常情况,不要打开本开关!!!", () -> {
+                setBoolean("inspectArmor", !getBoolean("inspectArmor", true));
+                BuildButtons();
+            }), new SrcButtonEntry("更详细的调试信息:" + (getBoolean("verboseDisplayDebug", false) ? "开" : "关"), "是否打印区块加载信息等更加冗长的调试信息。注意：本开关虽然不影响模组安全性,但可能造成被调试信息刷屏等", () -> {
+                setBoolean("verboseDisplayDebug", !getBoolean("verboseDisplayDebug", false));
+                BuildButtons();
+            }),};
+
+            SettingsWidget = EntryToWidget(settingsEntry, SettingsButtonsRow, SettingsButtonsCol, buttonWidth, width, height, textRenderer);
             for (ClickableWidget i : SettingsWidget) {
                 addDrawableChild(i);
             }
+        }
+
+        @Override
+        protected void init() {
+            BuildButtons();
+        }
+
+        @Override
+        public void close() {
+            if (client != null) {
+                client.setScreen(parent);
+            }
+        }
+    }
 
 
+    // 高级设置的警告
+    private static class AdvancedSettingsWarningSrc extends Screen {
+        // 5行一列
+        private static final int SettingsButtonsRow = 1;
+        private static final int SettingsButtonsCol = 2;
+        private final Screen parent;
+        private final int buttonWidth;
+        private ClickableWidget @NotNull [] SettingsWidget = new ClickableWidget[SettingsButtonsCol * SettingsButtonsRow];
+
+        public AdvancedSettingsWarningSrc(Screen parent) {
+            super(Text.literal("RST Auto Elytra Mod Settings Menu"));
+            this.parent = parent;
+            this.buttonWidth = Math.max(100, Math.min(300, (int) (this.width * 0.3)));
+        }
+
+        private void BuildButtons() {
+            for (ClickableWidget i : SettingsWidget) {
+                remove(i);
+            }
+            SrcEntry[] settingsEntry = new SrcEntry[]{new SrcButtonEntry("返回", "不修改高级设置", this::close), new SrcButtonEntry("我知道我在做什么!", "您已知晓更改高级设置的可能风险", () -> {
+                if (client != null) {
+                    client.setScreen(new AdvancedSettingsSrc(parent));
+                }
+            })};
+
+            SettingsWidget = EntryToWidget(settingsEntry, SettingsButtonsRow, SettingsButtonsCol, buttonWidth, width, height, textRenderer);
+            for (ClickableWidget i : SettingsWidget) {
+                addDrawableChild(i);
+            }
+        }
+
+        @Override
+        protected void init() {
+            BuildButtons();
         }
 
         @Override
@@ -380,5 +440,11 @@ public class RSTScr extends Screen {
             }
         }
 
+        @Override
+        public void render(@NotNull DrawContext context, int mouseX, int mouseY, float delta) {
+            super.render(context, mouseX, mouseY, delta);
+            context.drawCenteredTextWithShadow(textRenderer, "您正在修改高级设置!", width / 2, height / 4, 16777215);
+            context.drawCenteredTextWithShadow(textRenderer, "这可能导致Mod稳定性下降或出现意外事故!!!", width / 2, height / 4 + 30, 0xFF0000);
+        }
     }
 }
