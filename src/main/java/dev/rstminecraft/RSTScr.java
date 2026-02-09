@@ -445,8 +445,8 @@ public class RSTScr extends Screen {
         @Override
         public void render(@NotNull DrawContext context, int mouseX, int mouseY, float delta) {
             super.render(context, mouseX, mouseY, delta);
-            context.drawCenteredTextWithShadow(textRenderer, "您正在修改高级设置!", width / 2, height / 4, 16777215);
-            context.drawCenteredTextWithShadow(textRenderer, "这可能导致Mod稳定性下降或出现意外事故!!!", width / 2, height / 4 + 30, 0xFF0000);
+            context.drawCenteredTextWithShadow(textRenderer, "您正在修改高级设置!", width / 2, height / 4, 0xFFFFFFFF);
+            context.drawCenteredTextWithShadow(textRenderer, "这可能导致Mod稳定性下降或出现意外事故!!!", width / 2, height / 4 + 30, 0xFFFF0000);
         }
     }
 }
