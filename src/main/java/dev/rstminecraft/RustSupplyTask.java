@@ -176,19 +176,19 @@ public class RustSupplyTask {
             int diamondArmor = 0;
             int goldenArmor = 0;
             boolean elytra;
-            ItemStack s = client.player.getInventory().getArmorStack(2);
+            ItemStack s = client.player.getInventory().getStack(38);
             elytra = s.getItem() == Items.ELYTRA && (!isXP || isStackHasEnchantment(s, Enchantments.MENDING, 1)) && isStackHasEnchantment(s, Enchantments.UNBREAKING, 3);
-            s = client.player.getInventory().getArmorStack(0);
+            s = client.player.getInventory().getStack(36);
             if ((s.getItem() == Items.DIAMOND_BOOTS || s.getItem() == Items.NETHERITE_BOOTS) && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
                 diamondArmor++;
             if (s.getItem() == Items.GOLDEN_BOOTS && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
                 goldenArmor++;
-            s = client.player.getInventory().getArmorStack(1);
+            s = client.player.getInventory().getStack(37);
             if ((s.getItem() == Items.DIAMOND_LEGGINGS || s.getItem() == Items.NETHERITE_LEGGINGS) && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
                 diamondArmor++;
             if (s.getItem() == Items.GOLDEN_LEGGINGS && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
                 goldenArmor++;
-            s = client.player.getInventory().getArmorStack(3);
+            s = client.player.getInventory().getStack(39);
             if ((s.getItem() == Items.DIAMOND_HELMET || s.getItem() == Items.NETHERITE_HELMET) && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
                 diamondArmor++;
             if (s.getItem() == Items.GOLDEN_HELMET && isStackHasEnchantment(s, Enchantments.PROTECTION, 4))
@@ -296,7 +296,7 @@ public class RustSupplyTask {
         if (player == null || client.getNetworkHandler() == null) throw new TaskThread.TaskException("null");
         RunAsMainThread(() -> {
             // 切换槽位
-            player.getInventory().selectedSlot = HotBarSlot;
+            player.getInventory().setSelectedSlot(HotBarSlot);
             client.getNetworkHandler().sendPacket(new UpdateSelectedSlotC2SPacket(HotBarSlot));
             // 看向目标
             lookAt(player, Vec3d.ofCenter(targetPos));
@@ -526,8 +526,8 @@ public class RustSupplyTask {
     private static int countItemInInventory(@NotNull ClientPlayerEntity player, @NotNull Item SearchingItem) {
         int count = 0;
         PlayerInventory inventory = player.getInventory();
-        for (int i = 0; i < inventory.main.size(); i++) {
-            ItemStack stack = inventory.main.get(i);
+        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
+            ItemStack stack = inventory.getMainStacks().get(i);
             if (stack.getItem() == SearchingItem.asItem()) {
                 count += stack.getCount();
             }
@@ -598,8 +598,8 @@ public class RustSupplyTask {
         if (client.player == null) throw new TaskThread.TaskException("Player为null");
         int count = 0;
         PlayerInventory inventory = client.player.getInventory();
-        for (int i = 0; i < inventory.main.size(); i++) {
-            ItemStack stack = inventory.main.get(i);
+        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
+            ItemStack stack = inventory.getMainStacks().get(i);
             Item item = stack.getItem();
             if (item instanceof BlockItem && ((BlockItem) item).getBlock() instanceof ShulkerBoxBlock) {
                 count += stack.getCount();
@@ -626,8 +626,8 @@ public class RustSupplyTask {
         // 等待捡起潜影盒
         for (int j = 0; j < 10; j++) {
             int newCount = 0;
-            for (int i = 0; i < inventory.main.size(); i++) {
-                ItemStack stack = inventory.main.get(i);
+            for (int i = 0; i < inventory.getMainStacks().size(); i++) {
+                ItemStack stack = inventory.getMainStacks().get(i);
                 Item item = stack.getItem();
                 if (item instanceof BlockItem && ((BlockItem) item).getBlock() instanceof ShulkerBoxBlock) {
                     newCount += stack.getCount();

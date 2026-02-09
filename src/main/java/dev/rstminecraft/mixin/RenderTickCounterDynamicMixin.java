@@ -13,14 +13,15 @@ import static dev.rstminecraft.RustElytraClient.timerMultiplier;
 @Mixin(RenderTickCounter.Dynamic.class)
 public abstract class RenderTickCounterDynamicMixin {
     @Shadow
-    private float lastFrameDuration;
+    private float dynamicDeltaTicks;
 
     /**
      * 目标方法: private int beginRenderTick(long timeMillis)
-     * 注入点: 在更新 prevTimeMillis 字段时注入（此时 lastFrameDuration 刚刚计算完成）
+     * 注入点: 当 dynamicDeltaTicks 计算完毕并存入字段后，立即乘以倍率
+     * 目标字段: lastTimeMillis (1.21.8 中对应的字段名)
      */
-    @Inject(method = "beginRenderTick(J)I", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/RenderTickCounter$Dynamic;prevTimeMillis:J", opcode = Opcodes.PUTFIELD))
+    @Inject(method = "beginRenderTick(J)I", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/RenderTickCounter$Dynamic;lastTimeMillis:J", opcode = Opcodes.PUTFIELD))
     private void onBeginRenderTick(long timeMillis, CallbackInfoReturnable<Integer> info) {
-        this.lastFrameDuration *= timerMultiplier;
+        this.dynamicDeltaTicks *= timerMultiplier;
     }
 }
