@@ -553,12 +553,12 @@ public class RustElytraTask {
         float a = calculateUnloadedChunks(client, client.player);
 
         MsgSender.SendMsg(client.player, "未加载区块比例：" + a, MsgLevel.debug);
-        if (a > 0.4 && getPotentialJumpBlockingBlocks(-6).isEmpty()) {
+        if (a > 0.4 && getPotentialJumpBlockingBlocks(-7).isEmpty()) {
             MsgSender.SendMsg(client.player, "未加载区块太多，暂停baritone等待加载，接下来可能出现视角剧烈晃动！请不要直视屏幕！", MsgLevel.warning);
             RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("p"));
             cameraMixinSwitch = true;
             int tick = currentTick;
-            while (calculateUnloadedChunks(client, client.player) > 0.05 && getPotentialJumpBlockingBlocks(-2).isEmpty()) {
+            while (calculateUnloadedChunks(client, client.player) > 0.05 && getPotentialJumpBlockingBlocks(-3).isEmpty()) {
                 fixedYaw = client.player.getYaw() + (180 * ((currentTick - tick) % 2));
                 fixedPitch = 0;
                 RunAsMainThread(() -> {
