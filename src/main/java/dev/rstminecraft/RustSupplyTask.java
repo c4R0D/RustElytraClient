@@ -43,6 +43,7 @@ import java.util.Objects;
 
 import static dev.rstminecraft.RSTFireballProtect.isHittingFireball;
 import static dev.rstminecraft.RustElytraClient.MsgSender;
+import static dev.rstminecraft.RustElytraClient.timerMultiplier;
 import static dev.rstminecraft.TaskThread.RunAsMainThread;
 
 
@@ -784,6 +785,7 @@ public class RustSupplyTask {
     static void SupplyTask(@NotNull MinecraftClient client, boolean isXP) throws TaskThread.TaskException, TaskThread.TaskCanceled {
         if (client.player == null) throw new TaskThread.TaskException("Player为null");
 
+        timerMultiplier = 1;
         // 首先走到方块中央
         WalkingToCenter(client);
         TaskThread.delay(2);

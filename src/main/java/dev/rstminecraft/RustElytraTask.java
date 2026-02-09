@@ -56,6 +56,7 @@ public class RustElytraTask {
     private static int spinTimes = 0;
     private static boolean waitReset = false;
     private static int inFireTick = 0;
+    private static int LastWaitTick = 0;
 
     /**
      * 重置状态
@@ -69,6 +70,7 @@ public class RustElytraTask {
         isEating = 0;
         SegFailed = 0;
         LastSegFailedTick = -100000;
+        LastWaitTick = currentTick;
         LastPos = null;
         noFirework = false;
         isJumpBlockedByBlock = false;
@@ -157,11 +159,11 @@ public class RustElytraTask {
 
 
             if (c <= 128 && !noFirework) {
-                if (!client.player.getBlockPos().isWithinDistance(segPos, 100000)) {
+                if (!client.player.getBlockPos().isWithinDistance(segPos, 50000 * timerMultiplier)) {
                     noFirework = true;
                     MsgSender.SendMsg(client.player, "烟花不足，提前寻找位置降落！", MsgLevel.info);
                 } else
-                    throw new TaskThread.TaskException("烟花不足，以飞行路程不足总路程60%，可能是baritone设置错误？请检查！");
+                    throw new TaskThread.TaskException("烟花不足，以飞行路程很少，可能是baritone设置错误？请检查！");
             }
         }
     }
@@ -510,6 +512,13 @@ public class RustElytraTask {
         }
     }
 
+    /**
+     * 计算渲染距离内的未加载区块
+     *
+     * @param client 客户端对象
+     * @param player 玩家对象
+     * @return 未加载区块的占比(0 - 1)
+     */
     private static float calculateUnloadedChunks(@NotNull MinecraftClient client, @NotNull ClientPlayerEntity player) {
         ChunkPos centerChunk = new ChunkPos(player.getBlockPos());
         if (client.world == null) return 1;
@@ -530,6 +539,62 @@ public class RustElytraTask {
         }
 
         return totalChunks > 0 ? (float) unloadedChunks / totalChunks : 0;
+    }
+
+    /**
+     * 一个函数，检查当前未加载区块,在未加载区块过多时暂停并接管baritone飞行,通过快速来回转头原地悬停(并通过开启一些mixin防止玩家视角旋转)
+     * 以等待区块加载,并适当调整timer
+     *
+     * @param client 客户端对象
+     */
+    private static void WaitForLoadChunks(@NotNull MinecraftClient client) {
+        if (client.player == null) throw new TaskException("null");
+
+        float a = calculateUnloadedChunks(client, client.player);
+
+        MsgSender.SendMsg(client.player, "未加载区块比例：" + a, MsgLevel.debug);
+        if (a > 0.4 && getPotentialJumpBlockingBlocks(-6).isEmpty()) {
+            MsgSender.SendMsg(client.player, "未加载区块太多，暂停baritone等待加载，接下来可能出现视角剧烈晃动！请不要直视屏幕！", MsgLevel.warning);
+            RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("p"));
+            cameraMixinSwitch = true;
+            int tick = currentTick;
+            while (calculateUnloadedChunks(client, client.player) > 0.05 && getPotentialJumpBlockingBlocks(-2).isEmpty()) {
+                fixedYaw = client.player.getYaw() + (180 * ((currentTick - tick) % 2));
+                fixedPitch = 0;
+                RunAsMainThread(() -> {
+                    client.player.setPitch(0);
+                    client.player.setYaw(client.player.getYaw() + 180);
+                });
+                TaskThread.delay(1);
+            }
+            cameraMixinSwitch = false;
+            if ((currentTick - tick) % 2 == 1)
+                RunAsMainThread(() -> client.player.setYaw(client.player.getYaw() + 180));
+            RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("r"));
+
+
+            int tick2 = currentTick - LastWaitTick;
+            LastWaitTick = currentTick;
+            if (tick2 < 1200) {
+                // 一分钟内多次等待,适当减慢timer
+                if (timerMultiplier > 0.6f) {
+                    timerMultiplier -= 0.1f;
+                    MsgSender.SendMsg(client.player, "区块加载很慢,适当降低timer至" + timerMultiplier, MsgLevel.warning);
+                }
+            }
+        } else {
+            int tick2 = currentTick - LastWaitTick;
+            if (tick2 > 4800) {
+                LastWaitTick = currentTick;
+                // 四分钟内没有出现加载过慢
+                if (timerMultiplier < 1f) {
+                    timerMultiplier += 0.1f;
+                    MsgSender.SendMsg(client.player, "区块加载速度恢复,适当提升timer至" + timerMultiplier, MsgLevel.warning);
+                }
+
+            }
+
+        }
     }
 
     /**
@@ -687,6 +752,7 @@ public class RustElytraTask {
      */
     static boolean ElytraTask(@NotNull MinecraftClient client, int x, int z, boolean isXP) throws TaskThread.TaskException, TaskThread.TaskCanceled {
         // 重置各个状态
+        timerMultiplier = 1;
         resetStatus();
         MODLOGGER.error("{}", client.options.getClampedViewDistance());
         // 设置baritone
@@ -741,28 +807,7 @@ public class RustElytraTask {
                 AutoEating(client);
                 AutoEscapeLava(client);
                 AutoJumping(client, x, z);
-                if (currentTick % 10 == 0) {
-                    float a = calculateUnloadedChunks(client, client.player);
-                    MsgSender.SendMsg(client.player, "未加载区块比例：" + a, MsgLevel.debug);
-                    if (a > 0.4 && getPotentialJumpBlockingBlocks(-6).isEmpty()) {
-                        MsgSender.SendMsg(client.player, "未加载区块太多，暂停baritone等待加载，接下来可能出现视角剧烈晃动！请不要直视屏幕！", MsgLevel.warning);
-                        RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("p"));
-                        cameraMixinSwitch = true;
-                        int tick = currentTick;
-                        while (calculateUnloadedChunks(client, client.player) > 0.05 && getPotentialJumpBlockingBlocks(-2).isEmpty()) {
-                            fixedYaw = client.player.getYaw() + (180 * ((currentTick - tick) % 2));
-                            fixedPitch = 0;
-                            RunAsMainThread(() -> {
-                                client.player.setPitch(0);
-                                client.player.setYaw(client.player.getYaw() + 180);
-                            });
-                            TaskThread.delay(1);
-                        }
-                        cameraMixinSwitch = false;
-                        if ((currentTick - tick) % 2 == 1) RunAsMainThread(()->client.player.setYaw(client.player.getYaw() + 180));
-                        RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("r"));
-                    }
-                }
+                if (currentTick % 10 == 0) WaitForLoadChunks(client);
                 if (currentTick % 5 == 0) FireworkChecker(client, segPos);
                 if (isXP && currentTick % 5 == 0) RepairElytra(client, x, z);
                 if (!isXP && currentTick % 5 == 0) ElytraChecker(client);

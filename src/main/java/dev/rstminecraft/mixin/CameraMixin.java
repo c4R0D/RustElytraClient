@@ -16,8 +16,6 @@ public abstract class CameraMixin {
     @Shadow
     protected abstract void setRotation(float yaw, float pitch);
 
-
-    // 目标：在 Camera 更新完位置和旋转后，强制重写旋转值
     @Inject(method = "update", at = @At("TAIL"))
     private void overrideVisualRotation(BlockView area, Entity focusedEntity, boolean thirdPerson, boolean inverseView, float tickDelta, CallbackInfo ci) {
         if(cameraMixinSwitch) this.setRotation(fixedYaw, fixedPitch);

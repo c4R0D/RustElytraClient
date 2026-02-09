@@ -194,6 +194,8 @@ public class TaskThread extends Thread {
     @Override
     public void run() {
         RealRun();
+        timerMultiplier = 1;
+        cameraMixinSwitch = false;
         ModThread = null;
     }
 

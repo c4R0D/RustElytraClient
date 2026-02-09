@@ -44,8 +44,13 @@ public class RustElytraClient implements ClientModInitializer {
     static @NotNull ModStatuses ModStatus = ModStatuses.idle;
     private static KeyBinding openCustomScreenKey;
     FabricLoader loader = FabricLoader.getInstance();
+
+    // mixin相关变量
     public static boolean cameraMixinSwitch = false;
     public static float fixedYaw = 0f,fixedPitch = 0f;
+
+    // timer mixin相关
+    public static float timerMultiplier = 1f;
 
     @Override
     public void onInitializeClient() {
