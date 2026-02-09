@@ -34,6 +34,7 @@ import static com.mojang.text2speech.Narrator.LOGGER;
 import static dev.rstminecraft.RSTFireballProtect.FireballProtector;
 import static dev.rstminecraft.RustElytraClient.*;
 import static dev.rstminecraft.TaskThread.*;
+import static dev.rstminecraft.utils.RSTConfig.getBoolean;
 import static dev.rstminecraft.utils.RSTTask.scheduleTask;
 
 
@@ -162,8 +163,7 @@ public class RustElytraTask {
                 if (!client.player.getBlockPos().isWithinDistance(segPos, 50000 * timerMultiplier)) {
                     noFirework = true;
                     MsgSender.SendMsg(client.player, "烟花不足，提前寻找位置降落！", MsgLevel.info);
-                } else
-                    throw new TaskThread.TaskException("烟花不足，以飞行路程很少，可能是baritone设置错误？请检查！");
+                } else throw new TaskThread.TaskException("烟花不足，以飞行路程很少，可能是baritone设置错误？请检查！");
             }
         }
     }
@@ -547,12 +547,12 @@ public class RustElytraTask {
      *
      * @param client 客户端对象
      */
-    private static void WaitForLoadChunks(@NotNull MinecraftClient client) {
+    private static void WaitForLoadChunks(@NotNull MinecraftClient client, boolean verboseDisplayDebug) {
         if (client.player == null) throw new TaskException("null");
 
         float a = calculateUnloadedChunks(client, client.player);
 
-        MsgSender.SendMsg(client.player, "未加载区块比例：" + a, MsgLevel.debug);
+        if (verboseDisplayDebug) MsgSender.SendMsg(client.player, "未加载区块比例：" + a, MsgLevel.debug);
         if (a > 0.4 && getPotentialJumpBlockingBlocks(-7).isEmpty()) {
             MsgSender.SendMsg(client.player, "未加载区块太多，暂停baritone等待加载，接下来可能出现视角剧烈晃动！请不要直视屏幕！", MsgLevel.warning);
             RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("p"));
@@ -751,6 +751,7 @@ public class RustElytraTask {
      * @throws TaskThread.TaskCanceled  任务中止
      */
     static boolean ElytraTask(@NotNull MinecraftClient client, int x, int z, boolean isXP) throws TaskThread.TaskException, TaskThread.TaskCanceled {
+        boolean verboseDisplayDebug = getBoolean("verboseDisplayDebug", false);
         // 重置各个状态
         timerMultiplier = 1;
         resetStatus();
@@ -807,7 +808,7 @@ public class RustElytraTask {
                 AutoEating(client);
                 AutoEscapeLava(client);
                 AutoJumping(client, x, z);
-                if (currentTick % 10 == 0) WaitForLoadChunks(client);
+                if (currentTick % 10 == 0) WaitForLoadChunks(client, verboseDisplayDebug);
                 if (currentTick % 5 == 0) FireworkChecker(client, segPos);
                 if (isXP && currentTick % 5 == 0) RepairElytra(client, x, z);
                 if (!isXP && currentTick % 5 == 0) ElytraChecker(client);
