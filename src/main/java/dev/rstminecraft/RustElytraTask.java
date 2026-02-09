@@ -759,7 +759,7 @@ public class RustElytraTask {
                             TaskThread.delay(1);
                         }
                         cameraMixinSwitch = false;
-                        if ((currentTick - tick) % 2 == 1) client.player.setYaw(client.player.getYaw() + 180);
+                        if ((currentTick - tick) % 2 == 1) RunAsMainThread(()->client.player.setYaw(client.player.getYaw() + 180));
                         RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getCommandManager().execute("r"));
                     }
                 }
