@@ -19,8 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static dev.rstminecraft.RustElytraClient.*;
-import static dev.rstminecraft.utils.RSTConfig.getBoolean;
-import static dev.rstminecraft.utils.RSTConfig.setBoolean;
+import static dev.rstminecraft.utils.RSTConfig.*;
 
 public class RSTScr extends Screen {
     // 主菜单相关信息
@@ -353,7 +352,7 @@ public class RSTScr extends Screen {
     // 高级设置屏幕
     private static class AdvancedSettingsSrc extends Screen {
         // 5行一列
-        private static final int SettingsButtonsRow = 2;
+        private static final int SettingsButtonsRow = 3;
         private static final int SettingsButtonsCol = 1;
         private final Screen parent;
         private final int buttonWidth;
@@ -362,7 +361,7 @@ public class RSTScr extends Screen {
         public AdvancedSettingsSrc(Screen parent) {
             super(Text.literal("RST Auto Elytra Mod Settings Menu"));
             this.parent = parent;
-            this.buttonWidth = Math.max(100, Math.min(300, (int) (this.width * 0.3)));
+            this.buttonWidth = Math.max(100, Math.min(600, (int) (this.width * 0.7)));
         }
 
         private void BuildButtons() {
@@ -375,7 +374,10 @@ public class RSTScr extends Screen {
             }), new SrcButtonEntry("更详细的调试信息:" + (getBoolean("verboseDisplayDebug", false) ? "开" : "关"), "是否打印区块加载信息等更加冗长的调试信息。注意：本开关虽然不影响模组安全性,但可能造成被调试信息刷屏等", () -> {
                 setBoolean("verboseDisplayDebug", !getBoolean("verboseDisplayDebug", false));
                 BuildButtons();
-            }),};
+            }),new SrcButtonEntry("Mod食物:" + FoodList[getInt("FoodIndex",0)].getName().getString(),"切换Mod用于回复血量的食物，默认为金胡萝卜，是用其他食物可能降低模组稳定性!!!",()->{
+                setInt("FoodIndex",(getInt("FoodIndex",0) + 1) % FoodList.length);
+                BuildButtons();
+            })};
 
             SettingsWidget = EntryToWidget(settingsEntry, SettingsButtonsRow, SettingsButtonsCol, buttonWidth, width, height, textRenderer);
             for (ClickableWidget i : SettingsWidget) {

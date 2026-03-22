@@ -42,13 +42,16 @@ import java.util.List;
 import java.util.Objects;
 
 import static dev.rstminecraft.RSTFireballProtect.isHittingFireball;
-import static dev.rstminecraft.RustElytraClient.MsgSender;
-import static dev.rstminecraft.RustElytraClient.timerMultiplier;
+import static dev.rstminecraft.RustElytraClient.*;
 import static dev.rstminecraft.TaskThread.RunAsMainThread;
 import static dev.rstminecraft.utils.RSTConfig.getBoolean;
+import static dev.rstminecraft.utils.RSTConfig.getInt;
 
 
 public class RustSupplyTask {
+
+    private static Item Food = FoodList[0];
+
     /**
      * 走到方块中央
      *
@@ -112,7 +115,7 @@ public class RustSupplyTask {
             ScreenHandler handler2 = handled2.getScreenHandler();
             for (int i = 9; i < 36; i++) {
                 Item item = handler2.getSlot(i).getStack().getItem();
-                while (!(item != Items.NETHERITE_PICKAXE && item != Items.DIAMOND_PICKAXE && item != Items.NETHERITE_SWORD && item != Items.DIAMOND_SWORD && item != Items.ENDER_CHEST && item != Items.GOLDEN_CARROT && item != Items.TOTEM_OF_UNDYING)) {
+                while (!(item != Items.NETHERITE_PICKAXE && item != Items.DIAMOND_PICKAXE && item != Items.NETHERITE_SWORD && item != Items.DIAMOND_SWORD && item != Items.ENDER_CHEST && item != Food && item != Items.TOTEM_OF_UNDYING)) {
                     if (item == Items.NETHERITE_PICKAXE || item == Items.DIAMOND_PICKAXE) {
                         // 镐放到快捷栏第一格
                         if (player.getInventory().getStack(0).getItem() == Items.DIAMOND_PICKAXE || player.getInventory().getStack(0).getItem() == Items.NETHERITE_PICKAXE) {
@@ -150,11 +153,11 @@ public class RustSupplyTask {
                             client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
                         }
                     } else {
-                        // 金胡萝卜放到第六格
+                        // 食物放到第六格
                         client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
                         client.interactionManager.clickSlot(handler2.syncId, 41, 0, SlotActionType.PICKUP, player);
                         client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
-                        if (handler2.getSlot(i).getStack().getItem() == Items.GOLDEN_CARROT) break;
+                        if (handler2.getSlot(i).getStack().getItem() == Food) break;
 
                     }
                     item = handler2.getSlot(i).getStack().getItem();
@@ -165,14 +168,14 @@ public class RustSupplyTask {
             int enderChestCount = 0;
             boolean pickaxe = false;
             boolean sword = false;
-            int goldenCarrotCount = 0;
+            int FoodCount = 0;
             for (int i = 0; i < 9; i++) {
                 ItemStack s = client.player.getInventory().getStack(i);
                 if (s.getItem() == Items.NETHERITE_PICKAXE || s.getItem() == Items.DIAMOND_PICKAXE && isStackHasEnchantment(s, Enchantments.EFFICIENCY, 4) && isStackHasEnchantment(s, Enchantments.SILK_TOUCH, 1))
                     pickaxe = true;
                 else if ((s.getItem() == Items.NETHERITE_SWORD || s.getItem() == Items.DIAMOND_SWORD)) sword = true;
                 else if (s.getItem() == Items.ENDER_CHEST) enderChestCount += s.getCount();
-                else if (s.getItem() == Items.GOLDEN_CARROT) goldenCarrotCount += s.getCount();
+                else if (s.getItem() == Food) FoodCount += s.getCount();
             }
             int diamondArmor = 0;
             int goldenArmor = 0;
@@ -202,7 +205,7 @@ public class RustSupplyTask {
                 throw new TaskThread.TaskException("物资不足：需要有一把 经验修补吧 耐久3 效率4或效率5 的钻石或合金镐！");
             if (!sword) throw new TaskThread.TaskException("物资不足：需要有一把的钻石或合金剑（不要求附魔）！");
             if (!elytra) throw new TaskThread.TaskException("物资不足：需要穿戴 耐久3 经验修补的鞘翅！");
-            if (goldenCarrotCount <= 15) throw new TaskThread.TaskException("物资不足：需要至少16个金胡萝卜！");
+            if (FoodCount <= 15) throw new TaskThread.TaskException("物资不足：需要至少16个" + Food.getName().getString() + "!");
 
             if (getBoolean("inspectArmor",true) && (goldenArmor != 1 || diamondArmor != 2))
                 throw new TaskThread.TaskException("物资不足：需要穿戴有 保护4 推荐含有经验修补和耐久3 的一件金质盔甲和2件合金或钻石盔甲！");
@@ -432,7 +435,7 @@ public class RustSupplyTask {
                                 data[i][1] = ShulkerElytraFinder(inner);
                             }
                         }
-                        data[i][2] = ShulkerInnerFinder(Items.GOLDEN_CARROT, inner);
+                        data[i][2] = ShulkerInnerFinder(Food, inner);
 
                     } else {
                         sb.append("  (shulker is null...warning...)").append("\n");
@@ -539,7 +542,7 @@ public class RustSupplyTask {
     }
 
     /**
-     * 从潜影盒窗口中取出补给，特别处理金胡萝卜
+     * 从潜影盒窗口中取出补给，特别处理食物
      *
      * @param client  客户端对象
      * @param handler 潜影盒窗口handler
@@ -556,10 +559,10 @@ public class RustSupplyTask {
             for (int i = 0; i < 27; i++) {
                 ItemStack stack = handler.getSlot(i).getStack();
                 if (replaceList.isEmpty()) throw new TaskThread.TaskException("没多余槽位了");
-                if (stack.getItem() == Items.GOLDEN_CARROT) {
+                if (stack.getItem() == Food) {
                     for (int j = 0; j < 9; j++) {
                         ItemStack s = client.player.getInventory().getStack(j);
-                        if (s.getItem() == Items.GOLDEN_CARROT) {
+                        if (s.getItem() == Food) {
                             client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
                             client.interactionManager.clickSlot(handler.syncId, 54 + j, 0, SlotActionType.PICKUP, client.player);
                             client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
@@ -788,6 +791,8 @@ public class RustSupplyTask {
     static void SupplyTask(@NotNull MinecraftClient client, boolean isXP) throws TaskThread.TaskException, TaskThread.TaskCanceled {
         if (client.player == null) throw new TaskThread.TaskException("Player为null");
 
+        Food = FoodList[getInt("FoodIndex",0)];
+
         timerMultiplier = 1;
         // 首先走到方块中央
         WalkingToCenter(client);
@@ -854,7 +859,7 @@ public class RustSupplyTask {
             } else replaceSlot.add(i);
         }
         MsgSender.SendMsg(client.player, "可替换列表为" + replaceSlot, MsgLevel.debug);
-        if (client.player.getInventory().getStack(findItemInHotBar(client.player, Items.GOLDEN_CARROT)).getCount() < 30) {
+        if (client.player.getInventory().getStack(findItemInHotBar(client.player, Food)).getCount() < 30) {
             int slot2 = -1, max = 0;
             for (int i = 0; i < 27; i++) {
                 if (ShulkerData[i][2] > max) {
@@ -862,7 +867,7 @@ public class RustSupplyTask {
                     max = ShulkerData[i][2];
                 }
             }
-            if (slot2 == -1) MsgSender.SendMsg(client.player, "无可用金胡萝卜！", MsgLevel.warning);
+            if (slot2 == -1) MsgSender.SendMsg(client.player, "无可用" + Food.getName().getString() + "!", MsgLevel.warning);
             else ShulkerList.add(slot2);
         }
         TaskThread.delay(1);
@@ -877,7 +882,7 @@ public class RustSupplyTask {
             slot = -1;
             for (int j = 0; j < 9; j++) {
                 ItemStack stack2 = client.player.getInventory().getStack(j);
-                if (stack2.isEmpty() || stack2.getItem() != Items.ENDER_CHEST && stack2.getItem() != Items.DIAMOND_PICKAXE && stack2.getItem() != Items.NETHERITE_PICKAXE && stack2.getItem() != Items.DIAMOND_SWORD && stack2.getItem() != Items.NETHERITE_SWORD && stack2.getItem() != Items.GOLDEN_CARROT && stack2.getItem() != Items.TOTEM_OF_UNDYING) {
+                if (stack2.isEmpty() || stack2.getItem() != Items.ENDER_CHEST && stack2.getItem() != Items.DIAMOND_PICKAXE && stack2.getItem() != Items.NETHERITE_PICKAXE && stack2.getItem() != Items.DIAMOND_SWORD && stack2.getItem() != Items.NETHERITE_SWORD && stack2.getItem() != Food && stack2.getItem() != Items.TOTEM_OF_UNDYING) {
                     slot = j;
                     break;
                 }

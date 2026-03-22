@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import static dev.rstminecraft.RustElytraClient.timerMultiplier;
 
 @Mixin(RenderTickCounter.Dynamic.class)
-public abstract class RenderTickCounterDynamicMixin {
+public abstract class TimerMixin {
     @Shadow
     private float lastFrameDuration;
 
