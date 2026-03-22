@@ -2,11 +2,13 @@ package dev.rstminecraft.utils;
 
 
 import net.minecraft.util.math.Vec3d;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class FlightPredictor {
-    public static List<Vec3d> predictPath(int ticks,Vec3d pos,Vec3d vel,Vec3d look) {
+    public static @NotNull List<Vec3d> predictPath(int ticks, Vec3d pos, Vec3d vel, @NotNull Vec3d look) {
         List<Vec3d> points = new ArrayList<>();
 
         // Simulation Loop (20 GT)

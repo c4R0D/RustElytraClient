@@ -11,6 +11,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +40,7 @@ public class FindPathToOpen {
      * @param client Minecraft客户端实例
      * @return float[2] 数组，索引0为偏航角(yaw)，索引1为俯仰角(pitch)
      */
-    public static TakeoffStruct getTakeoffDirection(MinecraftClient client,double MAX_DIST,double SURROUND_DIST,double yr,double yh) {
+    public static @Nullable TakeoffStruct getTakeoffDirection(@NotNull MinecraftClient client, double MAX_DIST, double SURROUND_DIST, double yr, double yh) {
         World world = client.world;
         PlayerEntity player = client.player;
         if (world == null || player == null) {
@@ -90,7 +92,7 @@ public class FindPathToOpen {
     /**
      * 生成26个均匀分布的方向（立方体的26个邻格方向，归一化）
      */
-    private static List<Vec3d> generate26Directions(double yr) {
+    private static @NotNull List<Vec3d> generate26Directions(double yr) {
         List<Vec3d> list = new ArrayList<>(512);
         double phi = Math.PI * (3 - Math.sqrt(5));  // 黄金角
         for (int i = 0; i < 512; i++) {
@@ -108,7 +110,7 @@ public class FindPathToOpen {
     /**
      * 检查从起点沿方向直线移动指定距离内是否有方块阻挡
      */
-    public static BlockPos hasNoObstacleInLine(World world, Vec3d start, Vec3d startv, Vec3d dir, double maxDist) {
+    public static @Nullable BlockPos hasNoObstacleInLine(@NotNull World world, Vec3d start, Vec3d startv, @NotNull Vec3d dir, double maxDist) {
         Vec3d lookVec = dir.normalize();
 
         // 1. 定义鞘翅飞行时的碰撞箱 (通常高度会缩减为 0.6)
@@ -152,8 +154,8 @@ public class FindPathToOpen {
     /**
      * 计算沿某个方向飞行的开阔度分数（分数越高越开阔）
      */
-    private static double computeOpennessScore(World world, Vec3d start, Vec3d dir,
-                                               double maxDist, double surroundDist, ClientPlayerEntity player) {
+    private static double computeOpennessScore(@NotNull World world, @NotNull Vec3d start, @NotNull Vec3d dir,
+                                               double maxDist, double surroundDist, @NotNull ClientPlayerEntity player) {
         // 在路径上取4个点（10,20,30,40米处）
         double[][] sampleDistances = {{10,0.15}, {20,0.35}, {30,0.35}, {40,0.15}};
         double score = 0;
@@ -206,9 +208,9 @@ public class FindPathToOpen {
     /**
      * 在最佳方向的邻近区域进行细化搜索，返回最佳方向
      */
-    private static DirectionScore refineDirections(World world, Vec3d start,
-                                                   Vec3d startv,List<DirectionScore> topCandidates,
-                                                   double maxDist, double surroundDist, MinecraftClient client) {
+    private static DirectionScore refineDirections(@NotNull World world, @NotNull Vec3d start,
+                                                   Vec3d startv, @NotNull List<DirectionScore> topCandidates,
+                                                   double maxDist, double surroundDist, @NotNull MinecraftClient client) {
         final double ANGLE_RANGE = 15.0; // 搜索范围 ±15度
         final int STEPS = 5;             // 每个维度采样5个点，共25个
 
@@ -249,7 +251,7 @@ public class FindPathToOpen {
     /**
      * 从方向向量计算偏航角（度）
      */
-    private static float getYawFromDirection(Vec3d dir) {
+    private static float getYawFromDirection(@NotNull Vec3d dir) {
         double yaw = Math.toDegrees(Math.atan2(-dir.x, dir.z));
         return (float) ((yaw + 360) % 360);
     }
@@ -257,7 +259,7 @@ public class FindPathToOpen {
     /**
      * 从方向向量计算俯仰角（度）
      */
-    private static float getPitchFromDirection(Vec3d dir) {
+    private static float getPitchFromDirection(@NotNull Vec3d dir) {
         double pitch = Math.toDegrees(-Math.asin(dir.y));
         return (float) pitch;
     }
@@ -265,7 +267,7 @@ public class FindPathToOpen {
     /**
      * 从偏航角和俯仰角计算单位方向向量
      */
-    private static Vec3d getDirectionFromYawPitch(float yaw, float pitch) {
+    private static @NotNull Vec3d getDirectionFromYawPitch(float yaw, float pitch) {
         double yawRad = Math.toRadians(yaw);
         double pitchRad = Math.toRadians(pitch);
         double x = -Math.sin(yawRad) * Math.cos(pitchRad);

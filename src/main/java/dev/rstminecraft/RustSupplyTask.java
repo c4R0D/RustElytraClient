@@ -731,7 +731,7 @@ public class RustSupplyTask {
      * @param ShulkerData   潜影盒数据，二维数组。ShulkerData[m][0] 表示第m个潜影盒中的烟花数量；ShulkerData[m][1] 表示第m个潜影盒中的鞘翅数量
      * @return 操作列表（需要拿出的潜影盒列表）
      */
-    public static @NotNull List<Integer> ComputeShulker(int FireworkCount, int ElytraCount, int[] @NotNull [] ShulkerData) {
+    public static @NotNull List<Integer> ComputeShulker(int FireworkCount, int ElytraCount, int[] @NotNull @NotNull [] ShulkerData) {
         int totalBoxes = ShulkerData.length;
 
         int[][][] dp = new int[FireworkCount + 1][ElytraCount + 1][2];

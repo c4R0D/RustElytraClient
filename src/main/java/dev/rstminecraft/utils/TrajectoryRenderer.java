@@ -8,6 +8,7 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ public class TrajectoryRenderer {
         path.clear();
     }
 
-    private static void renderPos(WorldRenderContext context){
+    private static void renderPos(@NotNull WorldRenderContext context){
         if (MARKED_POSITIONS.isEmpty()) return;
 
         MatrixStack matrices = context.matrixStack();
@@ -62,7 +63,7 @@ public class TrajectoryRenderer {
             matrices.pop();
         }
     }
-    private static void renderTrajectory(WorldRenderContext context) {
+    private static void renderTrajectory(@NotNull WorldRenderContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || path.isEmpty()) return;
 

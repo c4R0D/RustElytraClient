@@ -420,7 +420,7 @@ public class RustElytraTask {
         client.options.jumpKey.setPressed(false);
     }
 
-    private static Vec3d getLookVec(float yaw, float pitch) {
+    private static @NotNull Vec3d getLookVec(float yaw, float pitch) {
         float f = pitch * ((float) Math.PI / 180F);
         float g = -yaw * ((float) Math.PI / 180F);
         float cosPitch = MathHelper.cos(f);
@@ -438,7 +438,6 @@ public class RustElytraTask {
             elytraTakeoff(client);
             nearGround = true;
         }
-        ;
         TimelinessCounter inLavaTicks = new TimelinessCounter(20);
         TakeTimeLoop:
         for (int TakeTime = 0; TakeTime < 6; TakeTime++) {
@@ -543,7 +542,7 @@ public class RustElytraTask {
         throw new TaskException("尝试飞往开阔地带次数过多");
     }
 
-    private static void clearBlockingBlock(@NotNull MinecraftClient client, int x, int z, List<BlockPos> bp) {
+    private static void clearBlockingBlock(@NotNull MinecraftClient client, int x, int z, @NotNull List<BlockPos> bp) {
         if (client.player == null) throw new TaskException("player不能为null");
         // 玩家头顶有方块阻挡，调用baritone API清除
         MsgSender.SendMsg(client.player, "头顶有方块阻挡，正在清除障碍", MsgLevel.tip);

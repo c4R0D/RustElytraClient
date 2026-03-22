@@ -117,7 +117,7 @@ public class TaskThread extends Thread {
      * @param <T>    一个不定类型
      * @return 运行结果, 类型不定
      */
-    public static <T> T RunAsMainThread(Supplier<T> lambda) {
+    public static <T> T RunAsMainThread(@NotNull Supplier<T> lambda) {
         if (Thread.currentThread() != ModThread) return lambda.get();
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -133,7 +133,7 @@ public class TaskThread extends Thread {
             throw new TaskException("任务执行异常");
         }
     }
-    public static <T> T RunAsMainThread2(Supplier<T> lambda) {
+    public static <T> T RunAsMainThread2(@NotNull Supplier<T> lambda) {
         if (Thread.currentThread() != ModThread) return lambda.get();
 
         CountDownLatch latch = new CountDownLatch(1);

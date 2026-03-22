@@ -4,7 +4,7 @@ import dev.rstminecraft.RustElytraClient;
 
 public class TimelinessCounter {
     private int count = 0;
-    private int updateInterval;
+    private final int updateInterval;
     private int LastUpdateTick = Integer.MIN_VALUE;
 
     public TimelinessCounter(int updateInterval) {
