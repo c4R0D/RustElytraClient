@@ -46,11 +46,11 @@ public class RustElytraTask {
     private final static TimelinessCounter jumpingCounter = new TimelinessCounter(100);
     private final static TimelinessCounter baritoneControlCounter = new TimelinessCounter(10);
     private final static TimelinessCounter FallingCounter = new TimelinessCounter(5);
+    private final static TimelinessCounter SegFailedCounter = new TimelinessCounter(6);
     /**
      * 以下变量为鞘翅飞行的状态
      */
     private static boolean arrived = false;
-    private static int SegFailed = 0;
     private static @Nullable BlockPos LastPos;
     private static boolean noFirework = false;
     private static boolean noElytra = false;
@@ -70,8 +70,7 @@ public class RustElytraTask {
         jumpingCounter.clear();
         baritoneControlCounter.clear();
         FallingCounter.clear();
-//        isEating = 0;
-        SegFailed = 0;
+        SegFailedCounter.clear();
         LastWaitTick = currentTick;
         LastPos = null;
         noFirework = false;
@@ -175,8 +174,8 @@ public class RustElytraTask {
     private static void baritoneChecker(@NotNull MinecraftClient client) {
         if (client.player == null) throw new TaskException("player 为null");
         // baritone寻路失败，等待重置状态或auto log
-        if (SegFailed > 25) {
-            if (SegFailed > 30) throw new TaskException("baritone寻路异常");
+        if (SegFailedCounter.getCount() > 25) {
+            if (SegFailedCounter.getCount() > 30) throw new TaskException("baritone寻路异常");
             else if (waitReset) {
                 RunAsMainThread(() -> BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().resetState());
                 MsgSender.SendMsg(client.player, "SegFailed！正在重置baritone!", MsgLevel.warning);
@@ -864,7 +863,7 @@ public class RustElytraTask {
                 MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(var1x, null, var2);
                 // 检测是否提示分段错误
                 if (MinecraftClient.getInstance().player != null && (var1x.getString().contains("Failed to compute path to destination") || var1x.getString().contains("Failed to recompute segment") || var1x.getString().contains("Failed to compute next segment"))) {
-                    baritoneControlCounter.accumulate();
+                    SegFailedCounter.accumulate();
                     waitReset = true;
                 }
             } catch (Throwable var3) {
