@@ -1,10 +1,9 @@
 package dev.rstminecraft.utils;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
+import net.minecraft.client.render.debug.DebugRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -50,7 +49,6 @@ public class TrajectoryRenderer {
         double camY = context.camera().getPos().y;
         double camZ = context.camera().getPos().z;
 
-        VertexConsumer buffer = consumers.getBuffer(RenderLayer.getLines());
 
         for (BlockPos pos : MARKED_POSITIONS) {
             matrices.push();
@@ -58,36 +56,31 @@ public class TrajectoryRenderer {
             matrices.translate(pos.getX() - camX, pos.getY() - camY, pos.getZ() - camZ);
 
             // 绘制一个红色透明立方体轮廓
-            WorldRenderer.drawBox(matrices, buffer, 0, 0, 0, 1, 1, 1, 1f, 0f, 0f, 1f);
+            DebugRenderer.drawBox(matrices, consumers, 0, 0, 0, 1, 1, 1, 1f, 0f, 0f, 1f);
 
             matrices.pop();
         }
     }
     private static void renderTrajectory(@NotNull WorldRenderContext context) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null || path.isEmpty()) return;
-
         MatrixStack matrices = context.matrixStack();
         Vec3d cameraPos = context.camera().getPos();
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
+        VertexConsumerProvider consumers = context.consumers();
 
-        matrices.push();
-        // Translate to world space relative to camera
-        matrices.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+        VertexConsumer lineBuffer = consumers.getBuffer(RenderLayer.getLines());
+
         Matrix4f matrix = matrices.peek().getPositionMatrix();
 
-        for (Vec3d point : path) {
-            // Drawing bright cyan line
-            buffer.vertex(matrix, (float)point.x, (float)point.y, (float)point.z)
-                    .color(0, 255, 255, 255);
+        for (int i = 0; i < path.size() - 1; i++) {
+            Vec3d start = path.get(i);
+            Vec3d end = path.get(i + 1);
+
+            // 每一根线段需要两个顶点
+            lineBuffer.vertex(matrix, (float)(start.x - cameraPos.x), (float)(start.y - cameraPos.y), (float)(start.z - cameraPos.z))
+                    .color(0f, 1f, 1f, 1f); // 亮青色
+
+            lineBuffer.vertex(matrix, (float)(end.x - cameraPos.x), (float)(end.y - cameraPos.y), (float)(end.z - cameraPos.z))
+                    .color(0f, 1f, 1f, 1f);
         }
-
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        RenderSystem.lineWidth(2.0f); // Make it visible
-        BufferRenderer.drawWithGlobalProgram(buffer.end());
-        matrices.pop();
-
 
     }
 }
