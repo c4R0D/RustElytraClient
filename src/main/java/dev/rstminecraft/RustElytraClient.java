@@ -65,7 +65,6 @@ public class RustElytraClient implements ClientModInitializer {
         MsgSender = new RSTMsgSender(getBoolean("DisplayDebug", false) ? MsgLevel.debug : MsgLevel.info);
         autoLogEnabled = getBoolean("autoLogEnabled",false);
         // GUI按键注册
-        BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess();
         openCustomScreenKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("RST Auto Elytra Mod主界面", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_R, "RST Auto Elytra Mod"));
         TrajectoryRenderer.init();
         // tick末事件注册
