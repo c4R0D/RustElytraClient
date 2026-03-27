@@ -1,6 +1,7 @@
 package dev.rstminecraft.mixin;
 
 import dev.rstminecraft.NoBaritone;
+import dev.rstminecraft.RustElytraClient;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -12,8 +13,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(TitleScreen.class)
-public class TitleScreenMixin extends Screen {
-    protected TitleScreenMixin(Text title) {
+public class BaritoneCheckMixin extends Screen {
+    protected BaritoneCheckMixin(Text title) {
         super(title);
     }
 
@@ -32,7 +33,20 @@ public class TitleScreenMixin extends Screen {
             hasAPI = false;
         }
 
-        if (!hasAPI) MinecraftClient.getInstance().setScreen(new NoBaritone(NoBaritone.NoBaritoneReason.NoAPI, true));
 
+        if (!hasAPI) {
+            MinecraftClient.getInstance().setScreen(new NoBaritone(NoBaritone.NoBaritoneReason.NoAPI, true));
+            return;
+        }
+
+        if (!RustElytraClient.isPausedMixinSuccess) {
+            MinecraftClient.getInstance().setScreen(new NoBaritone(NoBaritone.NoBaritoneReason.PausedMixinFailed, true));
+            return;
+
+        }
+
+        if (!RustElytraClient.isLookMixinSuccess) {
+            MinecraftClient.getInstance().setScreen(new NoBaritone(NoBaritone.NoBaritoneReason.LookMixinFailed, true));
+        }
     }
 }

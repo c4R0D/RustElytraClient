@@ -3,6 +3,7 @@ package dev.rstminecraft;
 import baritone.api.BaritoneAPI;
 import dev.rstminecraft.utils.MsgLevel;
 import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -11,6 +12,7 @@ import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
+import net.minecraft.component.type.FireworksComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
@@ -42,13 +44,16 @@ import java.util.List;
 import java.util.Objects;
 
 import static dev.rstminecraft.RSTFireballProtect.isHittingFireball;
-import static dev.rstminecraft.RustElytraClient.MsgSender;
-import static dev.rstminecraft.RustElytraClient.timerMultiplier;
+import static dev.rstminecraft.RustElytraClient.*;
 import static dev.rstminecraft.TaskThread.RunAsMainThread;
 import static dev.rstminecraft.utils.RSTConfig.getBoolean;
+import static dev.rstminecraft.utils.RSTConfig.getInt;
 
 
 public class RustSupplyTask {
+
+    private static Item Food = FoodList[0];
+
     /**
      * 走到方块中央
      *
@@ -77,13 +82,50 @@ public class RustSupplyTask {
         }
     }
 
-    private static void mergeItemInInv(@NotNull MinecraftClient client, Item item, @NotNull ScreenHandler handler, int slotMin, int slotMax) {
+    public static int getFireworkLevel(ItemStack stack) {
+        if (stack.isEmpty() || !stack.isOf(Items.FIREWORK_ROCKET)) {
+            return 0;
+        }
+
+        FireworksComponent fireworks = stack.get(DataComponentTypes.FIREWORKS);
+
+        if (fireworks != null) {
+            return fireworks.flightDuration();
+        }
+
+        return 0;
+    }
+
+    public static void extinguishFire(@NotNull MinecraftClient client) {
+        if (client.player == null || client.world == null || client.interactionManager == null)
+            throw new TaskThread.TaskException("重要变量为null");
+        List<BlockPos> fire = new ArrayList<>();
+        int radius = 3;
+        for (int i = -radius; i <= radius; i++) {
+            for (int j = -radius; j <= radius; j++) {
+                for (int k = -radius; k <= radius; k++) {
+                    BlockPos target = client.player.getBlockPos().add(i, j, k);
+                    if (RunAsMainThread(() -> client.world.getBlockState(target).getBlock() == Blocks.FIRE))
+                        fire.add(target);
+                }
+            }
+        }
+        for (BlockPos bp : fire) {
+            RunAsMainThread(() -> {
+                lookAt(client.player, Vec3d.ofCenter(bp));
+                client.interactionManager.attackBlock(bp, Direction.UP);
+            });
+            TaskThread.delay(1);
+        }
+    }
+
+    private static void mergeItemInInv(@NotNull MinecraftClient client, stackChecker c, @NotNull ScreenHandler handler, int slotMin, int slotMax) {
         if (client.player == null || client.interactionManager == null) throw new TaskThread.TaskException("null");
         while (true) {
             List<Integer> l = new ArrayList<>();
             for (int i = slotMin; i < slotMax; i++) {
                 ItemStack stack = handler.getSlot(i).getStack();
-                if (stack.getItem() == item) l.add(i);
+                if (c.checker(stack)) l.add(i);
             }
             l.sort(Comparator.comparingInt(i -> handler.getSlot(i).getStack().getCount()));
             if (l.size() < 2 || handler.getSlot(l.get(1)).getStack().getCount() == handler.getSlot(l.get(1)).getStack().getMaxCount())
@@ -110,9 +152,25 @@ public class RustSupplyTask {
 
             // 整理物品栏
             ScreenHandler handler2 = handled2.getScreenHandler();
+
+            for(int i = 36;i<45;i++){
+                Item item = handler2.getSlot(i).getStack().getItem();
+                if(item != Items.NETHERITE_PICKAXE && item != Items.DIAMOND_PICKAXE && item != Items.NETHERITE_SWORD && item != Items.DIAMOND_SWORD && item != Items.ENDER_CHEST && item != Food && item != Items.TOTEM_OF_UNDYING)
+                    continue;
+                for(int j = 9;j < 36;j++){
+                    Item item2 = handler2.getSlot(j).getStack().getItem();
+                    if(item2 != Items.NETHERITE_PICKAXE && item2 != Items.DIAMOND_PICKAXE && item2 != Items.NETHERITE_SWORD && item2 != Items.DIAMOND_SWORD && item2 != Items.ENDER_CHEST && item2 != Food && item2 != Items.TOTEM_OF_UNDYING){
+                        client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
+                        client.interactionManager.clickSlot(handler2.syncId, j, 0, SlotActionType.PICKUP, player);
+                        client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
+                        break;
+                    }
+                }
+            }
+
             for (int i = 9; i < 36; i++) {
                 Item item = handler2.getSlot(i).getStack().getItem();
-                while (!(item != Items.NETHERITE_PICKAXE && item != Items.DIAMOND_PICKAXE && item != Items.NETHERITE_SWORD && item != Items.DIAMOND_SWORD && item != Items.ENDER_CHEST && item != Items.GOLDEN_CARROT && item != Items.TOTEM_OF_UNDYING)) {
+                while (!(item != Items.NETHERITE_PICKAXE && item != Items.DIAMOND_PICKAXE && item != Items.NETHERITE_SWORD && item != Items.DIAMOND_SWORD && item != Items.ENDER_CHEST && item != Food && item != Items.TOTEM_OF_UNDYING)) {
                     if (item == Items.NETHERITE_PICKAXE || item == Items.DIAMOND_PICKAXE) {
                         // 镐放到快捷栏第一格
                         if (player.getInventory().getStack(0).getItem() == Items.DIAMOND_PICKAXE || player.getInventory().getStack(0).getItem() == Items.NETHERITE_PICKAXE) {
@@ -150,11 +208,11 @@ public class RustSupplyTask {
                             client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
                         }
                     } else {
-                        // 金胡萝卜放到第六格
+                        // 食物放到第六格
                         client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
                         client.interactionManager.clickSlot(handler2.syncId, 41, 0, SlotActionType.PICKUP, player);
                         client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
-                        if (handler2.getSlot(i).getStack().getItem() == Items.GOLDEN_CARROT) break;
+                        if (handler2.getSlot(i).getStack().getItem() == Food) break;
 
                     }
                     item = handler2.getSlot(i).getStack().getItem();
@@ -165,14 +223,14 @@ public class RustSupplyTask {
             int enderChestCount = 0;
             boolean pickaxe = false;
             boolean sword = false;
-            int goldenCarrotCount = 0;
+            int FoodCount = 0;
             for (int i = 0; i < 9; i++) {
                 ItemStack s = client.player.getInventory().getStack(i);
                 if (s.getItem() == Items.NETHERITE_PICKAXE || s.getItem() == Items.DIAMOND_PICKAXE && isStackHasEnchantment(s, Enchantments.EFFICIENCY, 4) && isStackHasEnchantment(s, Enchantments.SILK_TOUCH, 1))
                     pickaxe = true;
                 else if ((s.getItem() == Items.NETHERITE_SWORD || s.getItem() == Items.DIAMOND_SWORD)) sword = true;
                 else if (s.getItem() == Items.ENDER_CHEST) enderChestCount += s.getCount();
-                else if (s.getItem() == Items.GOLDEN_CARROT) goldenCarrotCount += s.getCount();
+                else if (s.getItem() == Food) FoodCount += s.getCount();
             }
             int diamondArmor = 0;
             int goldenArmor = 0;
@@ -196,19 +254,21 @@ public class RustSupplyTask {
                 goldenArmor++;
 
 
-
             if (enderChestCount <= 2) throw new TaskThread.TaskException("物资不足：至少需要3个末影箱！");
             if (!pickaxe)
                 throw new TaskThread.TaskException("物资不足：需要有一把 经验修补吧 耐久3 效率4或效率5 的钻石或合金镐！");
             if (!sword) throw new TaskThread.TaskException("物资不足：需要有一把的钻石或合金剑（不要求附魔）！");
             if (!elytra) throw new TaskThread.TaskException("物资不足：需要穿戴 耐久3 经验修补的鞘翅！");
-            if (goldenCarrotCount <= 15) throw new TaskThread.TaskException("物资不足：需要至少16个金胡萝卜！");
+            if (FoodCount <= 15)
+                throw new TaskThread.TaskException("物资不足：需要至少16个" + Food.getName().getString() + "!");
 
-            if (getBoolean("inspectArmor",true) && (goldenArmor != 1 || diamondArmor != 2))
+            if (getBoolean("inspectArmor", true) && (goldenArmor != 1 || diamondArmor != 2))
                 throw new TaskThread.TaskException("物资不足：需要穿戴有 保护4 推荐含有经验修补和耐久3 的一件金质盔甲和2件合金或钻石盔甲！");
 
-            mergeItemInInv(client, Items.FIREWORK_ROCKET, handler2, 9, 36);
-            mergeItemInInv(client, Items.EXPERIENCE_BOTTLE, handler2, 9, 36);
+            mergeItemInInv(client, (s2) -> s2.getItem() == Items.FIREWORK_ROCKET && getFireworkLevel(s2) == 1, handler2, 9, 36);
+            mergeItemInInv(client, (s2) -> s2.getItem() == Items.FIREWORK_ROCKET && getFireworkLevel(s2) == 2, handler2, 9, 36);
+            mergeItemInInv(client, (s2) -> s2.getItem() == Items.FIREWORK_ROCKET && getFireworkLevel(s2) == 3, handler2, 9, 36);
+            mergeItemInInv(client, (s2) -> s2.getItem() == Items.EXPERIENCE_BOTTLE, handler2, 9, 36);
 
             handled2.close();
         });
@@ -398,7 +458,7 @@ public class RustSupplyTask {
         int totalSlots = handled.getScreenHandler().slots.size();
         int containerSlots = totalSlots - 36;
         if (containerSlots <= 0) containerSlots = 27;
-        int[][] data = new int[27][3];
+        int[][] data = new int[27][4];
 
         for (int i = 0; i < containerSlots; i++) {
             Slot s = handled.getScreenHandler().getSlot(i);
@@ -432,7 +492,8 @@ public class RustSupplyTask {
                                 data[i][1] = ShulkerElytraFinder(inner);
                             }
                         }
-                        data[i][2] = ShulkerInnerFinder(Items.GOLDEN_CARROT, inner);
+                        data[i][2] = ShulkerInnerFinder(Food, inner);
+                        data[i][3] = ShulkerInnerFinder(Items.TOTEM_OF_UNDYING,inner);
 
                     } else {
                         sb.append("  (shulker is null...warning...)").append("\n");
@@ -539,7 +600,7 @@ public class RustSupplyTask {
     }
 
     /**
-     * 从潜影盒窗口中取出补给，特别处理金胡萝卜
+     * 从潜影盒窗口中取出补给，特别处理食物
      *
      * @param client  客户端对象
      * @param handler 潜影盒窗口handler
@@ -550,21 +611,40 @@ public class RustSupplyTask {
                 throw new TaskThread.TaskException("Player为null");
             MsgSender.SendMsg(client.player, "本盒需要取出" + m + "组烟花," + n + (isXP ? "组附魔之瓶" : "个鞘翅"), MsgLevel.debug);
 
-            mergeItemInInv(client, Items.FIREWORK_ROCKET, handler, 0, 27);
-            mergeItemInInv(client, Items.EXPERIENCE_BOTTLE, handler, 0, 27);
+
+            mergeItemInInv(client, (s2) -> s2.getItem() == Items.FIREWORK_ROCKET && getFireworkLevel(s2) == 1, handler, 0, 27);
+            mergeItemInInv(client, (s2) -> s2.getItem() == Items.FIREWORK_ROCKET && getFireworkLevel(s2) == 2, handler, 0, 27);
+            mergeItemInInv(client, (s2) -> s2.getItem() == Items.FIREWORK_ROCKET && getFireworkLevel(s2) == 3, handler, 0, 27);
+            mergeItemInInv(client, (s2) -> s2.getItem() == Items.EXPERIENCE_BOTTLE, handler, 0, 27);
+
+
             int a = 0, b = 0;
             for (int i = 0; i < 27; i++) {
                 ItemStack stack = handler.getSlot(i).getStack();
                 if (replaceList.isEmpty()) throw new TaskThread.TaskException("没多余槽位了");
-                if (stack.getItem() == Items.GOLDEN_CARROT) {
+                if (stack.getItem() == Food) {
                     for (int j = 0; j < 9; j++) {
                         ItemStack s = client.player.getInventory().getStack(j);
-                        if (s.getItem() == Items.GOLDEN_CARROT) {
+                        if (s.getItem() == Food) {
                             client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
                             client.interactionManager.clickSlot(handler.syncId, 54 + j, 0, SlotActionType.PICKUP, client.player);
                             client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
                             break;
                         }
+                    }
+                    continue;
+                }
+
+                if(stack.getItem() == Items.TOTEM_OF_UNDYING){
+                    if (client.player.getInventory().getStack(3).getItem() == Items.TOTEM_OF_UNDYING) {
+                        if (client.player.getInventory().getStack(4).getItem() == Items.TOTEM_OF_UNDYING) continue;
+                        client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP,client. player);
+                        client.interactionManager.clickSlot(handler.syncId, 58, 0, SlotActionType.PICKUP, client.player);
+                        client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
+                    } else {
+                        client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP,client. player);
+                        client.interactionManager.clickSlot(handler.syncId, 57, 0, SlotActionType.PICKUP, client.player);
+                        client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
                     }
                     continue;
                 }
@@ -580,7 +660,7 @@ public class RustSupplyTask {
                     client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
                     client.interactionManager.clickSlot(handler.syncId, 18 + slot, 0, SlotActionType.PICKUP, client.player);
                     client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
-                } else if (stack.getItem() == Items.ELYTRA && !isXP && b < n && isStackHasEnchantment(stack,Enchantments.UNBREAKING,3) && stack.getDamage() < 15) {
+                } else if (stack.getItem() == Items.ELYTRA && !isXP && b < n && isStackHasEnchantment(stack, Enchantments.UNBREAKING, 3) && stack.getDamage() < 15) {
                     b++;
                     int slot = replaceList.removeFirst();
                     client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
@@ -728,7 +808,7 @@ public class RustSupplyTask {
      * @param ShulkerData   潜影盒数据，二维数组。ShulkerData[m][0] 表示第m个潜影盒中的烟花数量；ShulkerData[m][1] 表示第m个潜影盒中的鞘翅数量
      * @return 操作列表（需要拿出的潜影盒列表）
      */
-    public static @NotNull List<Integer> ComputeShulker(int FireworkCount, int ElytraCount, int[] @NotNull [] ShulkerData) {
+    public static @NotNull List<Integer> ComputeShulker(int FireworkCount, int ElytraCount, int[][] ShulkerData) {
         int totalBoxes = ShulkerData.length;
 
         int[][][] dp = new int[FireworkCount + 1][ElytraCount + 1][2];
@@ -788,16 +868,18 @@ public class RustSupplyTask {
     static void SupplyTask(@NotNull MinecraftClient client, boolean isXP) throws TaskThread.TaskException, TaskThread.TaskCanceled {
         if (client.player == null) throw new TaskThread.TaskException("Player为null");
 
+        Food = FoodList[getInt("FoodIndex", 0)];
+
         timerMultiplier = 1;
         // 首先走到方块中央
         WalkingToCenter(client);
         TaskThread.delay(2);
-
         // 整理物品栏
         ClientPlayerEntity player = client.player;
         if (player == null || client.interactionManager == null) throw new TaskThread.TaskException("player为null");
         SortAndCheckInv(client, isXP);
         TaskThread.delay(2);
+
 
         int FireworkInNeed = (int) Math.floor(Math.max(isXP ? 23 * 64 - FireworkSupplyChecker(client) : 21 * 64 - FireworkSupplyChecker(client), 0) / 64.0);
 
@@ -806,6 +888,10 @@ public class RustSupplyTask {
         if (FireworkInNeed == 0 && ElytraInNeed == 0) return;
 
         MsgSender.SendMsg(client.player, "所需补给:" + FireworkInNeed + "组烟花," + ElytraInNeed + (isXP ? "组附魔之瓶" : "个鞘翅"), MsgLevel.info);
+
+        // 扑灭身边火焰
+        extinguishFire(client);
+
         // 寻找末影箱
         int slot = findItemInHotBar(player, Items.ENDER_CHEST);
         if (slot == -1) throw new TaskThread.TaskException("无末影箱");
@@ -846,7 +932,7 @@ public class RustSupplyTask {
                 }
                 replaceSlot.add(i);
             } else if (s.getItem() == Items.ELYTRA && !isXP) {
-                if (s.getDamage() < 15 && n < 5 && isStackHasEnchantment(s,Enchantments.UNBREAKING,3)) {
+                if (s.getDamage() < 15 && n < 5 && isStackHasEnchantment(s, Enchantments.UNBREAKING, 3)) {
                     n++;
                     continue;
                 }
@@ -854,7 +940,7 @@ public class RustSupplyTask {
             } else replaceSlot.add(i);
         }
         MsgSender.SendMsg(client.player, "可替换列表为" + replaceSlot, MsgLevel.debug);
-        if (client.player.getInventory().getStack(findItemInHotBar(client.player, Items.GOLDEN_CARROT)).getCount() < 30) {
+        if (client.player.getInventory().getStack(findItemInHotBar(client.player, Food)).getCount() < 30) {
             int slot2 = -1, max = 0;
             for (int i = 0; i < 27; i++) {
                 if (ShulkerData[i][2] > max) {
@@ -862,7 +948,20 @@ public class RustSupplyTask {
                     max = ShulkerData[i][2];
                 }
             }
-            if (slot2 == -1) MsgSender.SendMsg(client.player, "无可用金胡萝卜！", MsgLevel.warning);
+            if (slot2 == -1)
+                MsgSender.SendMsg(client.player, "无可用" + Food.getName().getString() + "!", MsgLevel.warning);
+            else ShulkerList.add(slot2);
+        }
+        if (client.player.getInventory().getStack(4).getItem() != Items.TOTEM_OF_UNDYING) {
+            int slot2 = -1, max = 0;
+            for (int i = 0; i < 27; i++) {
+                if (ShulkerData[i][2] > max) {
+                    slot2 = i;
+                    max = ShulkerData[i][2];
+                }
+            }
+            if (slot2 == -1 || max < 2)
+                MsgSender.SendMsg(client.player, "无可用图腾!", MsgLevel.warning);
             else ShulkerList.add(slot2);
         }
         TaskThread.delay(1);
@@ -875,9 +974,9 @@ public class RustSupplyTask {
             else MsgSender.SendMsg(client.player, "准备拿出" + SupplySlot, MsgLevel.tip);
             // 找可以用来放潜影盒的槽位
             slot = -1;
-            for (int j = 0; j < 9; j++) {
+            for (int j = 6; j < 9; j++) {
                 ItemStack stack2 = client.player.getInventory().getStack(j);
-                if (stack2.isEmpty() || stack2.getItem() != Items.ENDER_CHEST && stack2.getItem() != Items.DIAMOND_PICKAXE && stack2.getItem() != Items.NETHERITE_PICKAXE && stack2.getItem() != Items.DIAMOND_SWORD && stack2.getItem() != Items.NETHERITE_SWORD && stack2.getItem() != Items.GOLDEN_CARROT && stack2.getItem() != Items.TOTEM_OF_UNDYING) {
+                if (stack2.isEmpty() || stack2.getItem() != Items.ENDER_CHEST && stack2.getItem() != Items.DIAMOND_PICKAXE && stack2.getItem() != Items.NETHERITE_PICKAXE && stack2.getItem() != Items.DIAMOND_SWORD && stack2.getItem() != Items.NETHERITE_SWORD && stack2.getItem() != Food && stack2.getItem() != Items.TOTEM_OF_UNDYING) {
                     slot = j;
                     break;
                 }
@@ -914,9 +1013,10 @@ public class RustSupplyTask {
 
             // 等待潜影盒窗口
             HandledScreen<?> ShulkerHandled = WaitForScreen(client, ShulkerName);
-
-            mergeItemInInv(client, Items.FIREWORK_ROCKET, ShulkerHandled.getScreenHandler(), 0, 27);
-            mergeItemInInv(client, Items.EXPERIENCE_BOTTLE, ShulkerHandled.getScreenHandler(), 0, 27);
+            mergeItemInInv(client, (s2) -> s2.getItem() == Items.FIREWORK_ROCKET && getFireworkLevel(s2) == 1, ShulkerHandled.getScreenHandler(), 0, 27);
+            mergeItemInInv(client, (s2) -> s2.getItem() == Items.FIREWORK_ROCKET && getFireworkLevel(s2) == 2, ShulkerHandled.getScreenHandler(), 0, 27);
+            mergeItemInInv(client, (s2) -> s2.getItem() == Items.FIREWORK_ROCKET && getFireworkLevel(s2) == 3, ShulkerHandled.getScreenHandler(), 0, 27);
+            mergeItemInInv(client, (s2) -> s2.getItem() == Items.EXPERIENCE_BOTTLE, ShulkerHandled.getScreenHandler(), 0, 27);
             // 拿出补给
             int shouldPutOutFirework = Math.min(FireworkInNeed, ShulkerData[SupplySlot][0]);
             int shouldPutOutElytra = Math.min(ElytraInNeed, ShulkerData[SupplySlot][1]);
@@ -951,6 +1051,10 @@ public class RustSupplyTask {
         // 挖掘末影箱
         mineEnderChest(client, EnderChestTargetPos);
         MsgSender.SendMsg(client.player, "补给任务圆满完成！", MsgLevel.tip);
+    }
+
+    private interface stackChecker {
+        boolean checker(ItemStack s);
     }
 
 

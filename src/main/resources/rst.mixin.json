@@ -3,8 +3,14 @@
   "package": "dev.rstminecraft.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "TitleScreenMixin"
+    "BaritoneCheckMixin",
+    "BaritoneUpdateTarget",
+    "BaritoneUpdateTarget2",
+    "PausedTestMixin",
+    "PausedTestMixin2"
   ],
+  "priority": 10,
+  "plugin": "dev.rstminecraft.mixin.RstMixinPlugin",
   "injectors": {
     "defaultRequire": 1
   },
@@ -12,6 +18,6 @@
     "CameraMixin",
     "FireworkRocketEntityMixin",
     "HeldItemRendererMixin",
-    "RenderTickCounterDynamicMixin"
+    "TimerMixin"
   ]
 }

@@ -82,12 +82,24 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
-jar {
-    inputs.property "archivesName", project.base.archivesName
+tasks.named("remapJar") {
+    def mcVersion = project.property("minecraft_version")
+    def baseName = project.property("archives_base_name")
+    def modVersion = project.property("mod_version")
+    def buildTime = new Date().format("yyMMdd_HHmm")
 
-    from("LICENSE") {
-        rename { "${it}_${inputs.properties.archivesName}" }
-    }
+    archiveBaseName.set("${mcVersion}/${baseName}-${mcVersion}")   // ⚠️ 不要用 /
+    archiveVersion.set("${modVersion}-${buildTime}")
+}
+
+tasks.named("remapSourcesJar") {
+    def mcVersion = project.property("minecraft_version")
+    def baseName = project.property("archives_base_name")
+    def modVersion = project.property("mod_version")
+    def buildTime = new Date().format("yyMMdd_HHmm")
+
+    archiveBaseName.set("${mcVersion}/${baseName}-${mcVersion}")   // ⚠️ 不要用 /
+    archiveVersion.set("${modVersion}-${buildTime}")
 }
 
 // configure the maven publication

@@ -4,6 +4,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.NotNull;
 
 
 public class NoBaritone extends Screen {
@@ -40,7 +41,7 @@ public class NoBaritone extends Screen {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(@NotNull DrawContext context, int mouseX, int mouseY, float delta) {
         this.renderBackground(context, mouseX, mouseY, delta);
         super.render(context, mouseX, mouseY, delta);
         switch (reason) {
@@ -54,6 +55,16 @@ public class NoBaritone extends Screen {
                 context.drawCenteredTextWithShadow(this.textRenderer, "此版本不包含可供模组调用的API,请使用API版、unoptimized版或彗星版", this.width / 2, this.height / 2 - 30, 0xAAAAAA);
                 context.drawCenteredTextWithShadow(this.textRenderer, "若您不确定应该用哪个版本，请使用QQ群文件中的推荐版", this.width / 2, this.height / 2 - 10, 0xAAAAAA);
             }
+            case LookMixinFailed -> {
+                context.drawCenteredTextWithShadow(this.textRenderer, "LookBehaviorMixin注入失败了", this.width / 2, this.height / 2 - 50, 0xFFFFFF);
+                context.drawCenteredTextWithShadow(this.textRenderer, "这通常是因为作者还没有适配新版本baritone", this.width / 2, this.height / 2 - 30, 0xAAAAAA);
+                context.drawCenteredTextWithShadow(this.textRenderer, "请在QQ群内反馈", this.width / 2, this.height / 2 - 10, 0xAAAAAA);
+            }
+            case PausedMixinFailed -> {
+                context.drawCenteredTextWithShadow(this.textRenderer, "PausedMixin注入失败了", this.width / 2, this.height / 2 - 50, 0xFFFFFF);
+                context.drawCenteredTextWithShadow(this.textRenderer, "这通常是因为作者还没有适配新版本baritone", this.width / 2, this.height / 2 - 30, 0xAAAAAA);
+                context.drawCenteredTextWithShadow(this.textRenderer, "请在QQ群内反馈", this.width / 2, this.height / 2 - 10, 0xAAAAAA);
+            }
         }
 
 
@@ -65,6 +76,6 @@ public class NoBaritone extends Screen {
     }
 
     public enum NoBaritoneReason {
-        NoModId, NoAPI
+        NoModId, NoAPI, LookMixinFailed,PausedMixinFailed
     }
 }
