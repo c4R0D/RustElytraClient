@@ -11,18 +11,12 @@ import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.URI;
-
 import static dev.rstminecraft.RustElytraClient.*;
-import static dev.rstminecraft.utils.RSTConfig.getBoolean;
-import static dev.rstminecraft.utils.RSTConfig.setBoolean;
+import static dev.rstminecraft.utils.RSTConfig.*;
 
 public class RSTScr extends Screen {
     // 主菜单相关信息
@@ -32,27 +26,6 @@ public class RSTScr extends Screen {
     private final Screen parent;
     private final int buttonWidth;
 
-    //主菜单组件信息
-    private final SrcEntry[] MainEntry = {new SrcButtonEntry("设置", "调整Mod设置", () -> {
-        if (client != null) {
-            client.setScreen(new SettingsSrc(client.currentScreen));
-        }
-    })// 一个“设置”按钮
-            , new SrcButtonEntry("飞行菜单", "输入坐标并开始自动飞行", () -> {
-        if (client != null) {
-            client.setScreen(new ciSrc(client.currentScreen));
-        }
-    })// 一个“飞行菜单”按钮
-            , new SrcButtonEntry("使用指南", "请按指南要求完成必要设置", () -> {
-        if (client != null && client.player != null) {
-            Text linkText = Text.literal("点击查看Mod指南").styled(style -> style.withColor(Formatting.BLUE).withUnderline(true).withClickEvent(new ClickEvent.OpenUrl(URI.create("https://elytra.rust3c.top/Rust%20Elytra%20Client%20v1.0.pdf"))).withHoverEvent(new HoverEvent.ShowText(Text.literal("打开PDF指南"))));
-
-            client.player.sendMessage(linkText, false);
-            client.player.sendMessage(Text.literal("§4[Rust Elytra]pdf指南链接已经发到聊天框§r"), true);
-            client.setScreen(null);
-        }
-    })// 一个“帮助”按钮
-    };
 
     private boolean firstUse;
     private ButtonWidget button1;
@@ -110,9 +83,35 @@ public class RSTScr extends Screen {
         return widget;
     }
 
-    @Override
-    protected void init() {// 转换为屏幕控件
-        ClickableWidget[] mainWidget = EntryToWidget(MainEntry, MainButtonsRow, MainButtonsCol, buttonWidth, width, height, textRenderer);
+
+    ClickableWidget[] mainWidget = new ClickableWidget[MainButtonsCol*MainButtonsRow];
+    private void BuildButtons() {
+
+        for (ClickableWidget i : mainWidget) {
+            remove(i);
+        }
+
+        //主菜单组件信息
+        SrcEntry[] MainEntry = {new SrcButtonEntry("设置", "调整Mod设置", () -> {
+            if (client != null) {
+                client.setScreen(new SettingsSrc(client.currentScreen));
+            }
+        })// 一个“设置”按钮
+                , new SrcButtonEntry("飞行菜单", "输入坐标并开始自动飞行", () -> {
+            if (client != null) {
+                client.setScreen(new ciSrc(client.currentScreen));
+            }
+        })// 一个“自动退出”开关
+                , new SrcButtonEntry("自动退出:" + (getBoolean("autoLogEnabled", false) ? "开" : "关"), "是否在血量低于3,且手中只有一个图腾时自动退出(仅限mod运行时,且触发后自动禁用)", () -> {
+            if (client != null && client.player != null) {
+                setBoolean("autoLogEnabled", !getBoolean("autoLogEnabled", false));
+                autoLogEnabled = getBoolean("autoLogEnabled", false);
+                BuildButtons();
+            }
+        })// 一个“帮助”按钮
+        };
+
+        mainWidget = EntryToWidget(MainEntry, MainButtonsRow, MainButtonsCol, buttonWidth, width, height, textRenderer);
 
         if (firstUse) {
             // 首次使用,提示信息
@@ -140,17 +139,22 @@ public class RSTScr extends Screen {
         }
     }
 
+    @Override
+    protected void init() {// 转换为屏幕控件
+        BuildButtons();
+    }
+
 
     @Override
     public void render(@NotNull DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
-        context.drawTextWithShadow(textRenderer, "欢迎使用RSTAutoElytraMod", width / 3 * 2, 20, 0xFFFFFFFF);
+        context.drawTextWithShadow(textRenderer, "欢迎使用RSTAutoElytraMod", width / 3 * 2, 20, 16777215);
         // 渲染提示信息
         if (firstUse) {
-            context.drawTextWithShadow(textRenderer, "若您是第一次使用RSTAutoElytraMod，请务必仔细阅读本指南", width / 4, height / 10, 0xFFFF0000);
-            context.drawTextWithShadow(textRenderer, "否则可能造成物资损失或存档损坏等严重后果！", width / 4, height / 10 + 15, 0xFFFFFFFF);
+            context.drawTextWithShadow(textRenderer, "若您是第一次使用RSTAutoElytraMod，请务必仔细阅读本指南", width / 4, height / 10, 0xFF0000);
+            context.drawTextWithShadow(textRenderer, "否则可能造成物资损失或存档损坏等严重后果！", width / 4, height / 10 + 15, 0xFFFFFF);
         } else if (ModStatus != ModStatuses.idle) {
-            context.drawTextWithShadow(textRenderer, "正在飞行中，若要更改设置请先取消飞行。", width / 4, height / 10, 0xFFFF0000);
+            context.drawTextWithShadow(textRenderer, "正在飞行中，若要更改设置请先取消飞行。", width / 4, height / 10, 0xFF0000);
 
         }
     }
@@ -355,7 +359,7 @@ public class RSTScr extends Screen {
     // 高级设置屏幕
     private static class AdvancedSettingsSrc extends Screen {
         // 5行一列
-        private static final int SettingsButtonsRow = 2;
+        private static final int SettingsButtonsRow = 3;
         private static final int SettingsButtonsCol = 1;
         private final Screen parent;
         private final int buttonWidth;
@@ -364,7 +368,7 @@ public class RSTScr extends Screen {
         public AdvancedSettingsSrc(Screen parent) {
             super(Text.literal("RST Auto Elytra Mod Settings Menu"));
             this.parent = parent;
-            this.buttonWidth = Math.max(100, Math.min(300, (int) (this.width * 0.3)));
+            this.buttonWidth = Math.max(100, Math.min(600, (int) (this.width * 0.7)));
         }
 
         private void BuildButtons() {
@@ -377,7 +381,10 @@ public class RSTScr extends Screen {
             }), new SrcButtonEntry("更详细的调试信息:" + (getBoolean("verboseDisplayDebug", false) ? "开" : "关"), "是否打印区块加载信息等更加冗长的调试信息。注意：本开关虽然不影响模组安全性,但可能造成被调试信息刷屏等", () -> {
                 setBoolean("verboseDisplayDebug", !getBoolean("verboseDisplayDebug", false));
                 BuildButtons();
-            }),};
+            }), new SrcButtonEntry("Mod食物:" + FoodList[getInt("FoodIndex", 0)].getName().getString(), "切换Mod用于回复血量的食物，默认为金胡萝卜，是用其他食物可能降低模组稳定性!!!", () -> {
+                setInt("FoodIndex", (getInt("FoodIndex", 0) + 1) % FoodList.length);
+                BuildButtons();
+            })};
 
             SettingsWidget = EntryToWidget(settingsEntry, SettingsButtonsRow, SettingsButtonsCol, buttonWidth, width, height, textRenderer);
             for (ClickableWidget i : SettingsWidget) {
@@ -445,8 +452,8 @@ public class RSTScr extends Screen {
         @Override
         public void render(@NotNull DrawContext context, int mouseX, int mouseY, float delta) {
             super.render(context, mouseX, mouseY, delta);
-            context.drawCenteredTextWithShadow(textRenderer, "您正在修改高级设置!", width / 2, height / 4, 0xFFFFFFFF);
-            context.drawCenteredTextWithShadow(textRenderer, "这可能导致Mod稳定性下降或出现意外事故!!!", width / 2, height / 4 + 30, 0xFFFF0000);
+            context.drawCenteredTextWithShadow(textRenderer, "您正在修改高级设置!", width / 2, height / 4, 16777215);
+            context.drawCenteredTextWithShadow(textRenderer, "这可能导致Mod稳定性下降或出现意外事故!!!", width / 2, height / 4 + 30, 0xFF0000);
         }
     }
 }

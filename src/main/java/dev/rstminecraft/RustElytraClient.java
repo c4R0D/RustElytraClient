@@ -6,9 +6,9 @@ package dev.rstminecraft;
 
 //文件解释：本文件为模组主文件。
 
+import baritone.api.BaritoneAPI;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import dev.rstminecraft.utils.MsgLevel;
-import dev.rstminecraft.utils.RSTMsgSender;
+import dev.rstminecraft.utils.*;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -19,6 +19,8 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.item.Item;
+import net.minecraft.item.Items;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -28,29 +30,31 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import static dev.rstminecraft.utils.RSTConfig.getBoolean;
-import static dev.rstminecraft.utils.RSTConfig.loadConfig;
+import static dev.rstminecraft.utils.RSTConfig.*;
 import static dev.rstminecraft.utils.RSTTask.scheduleTask;
 import static dev.rstminecraft.utils.RSTTask.tick;
 
 public class RustElytraClient implements ClientModInitializer {
-
     public static final Logger MODLOGGER = LoggerFactory.getLogger("rust-elytra-client");
     public static final AtomicReference<TaskHolder<?>> currentTask = new AtomicReference<>();
+    public static final Item[] FoodList = {Items.GOLDEN_CARROT, Items.GOLDEN_APPLE, Items.ENCHANTED_GOLDEN_APPLE, Items.COOKED_BEEF, Items.COOKED_PORKCHOP, Items.COOKED_CHICKEN};
     static final Object ThreadLock = new Object();
     public static int currentTick = 0;
-    static RSTMsgSender MsgSender;
-    static @NotNull ModStatuses ModStatus = ModStatuses.idle;
-    private static KeyBinding openCustomScreenKey;
-    FabricLoader loader = FabricLoader.getInstance();
-
+    public static boolean autoLogEnabled = false;
     // mixin相关变量
     public static boolean cameraMixinSwitch = false;
-    public static float fixedYaw = 0f,fixedPitch = 0f;
-
+    public static float fixedYaw = 0f, fixedPitch = 0f;
+    public static boolean isLookMixinSuccess = false;
+    public static boolean isPausedMixinSuccess = false;
+    public static boolean[] paused;
     // timer mixin相关
     public static float timerMultiplier = 1f;
+    public static RSTMsgSender MsgSender;
+    static @NotNull ModStatuses ModStatus = ModStatuses.idle;
+    private static KeyBinding openCustomScreenKey;
 
+
+    FabricLoader loader = FabricLoader.getInstance();
     @Override
     public void onInitializeClient() {
         boolean hasBaritone = loader.isModLoaded("baritone") || loader.isModLoaded("baritone-meteor");
@@ -59,9 +63,10 @@ public class RustElytraClient implements ClientModInitializer {
         }
         loadConfig(FabricLoader.getInstance().getConfigDir().resolve("RSTConfig.json"));
         MsgSender = new RSTMsgSender(getBoolean("DisplayDebug", false) ? MsgLevel.debug : MsgLevel.info);
+        autoLogEnabled = getBoolean("autoLogEnabled",false);
         // GUI按键注册
         openCustomScreenKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("RST Auto Elytra Mod主界面", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_R, "RST Auto Elytra Mod"));
-
+        TrajectoryRenderer.init();
         // tick末事件注册
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             currentTick++;
@@ -82,8 +87,11 @@ public class RustElytraClient implements ClientModInitializer {
                 }
             }
             tick();
-            if (openCustomScreenKey.isPressed())
+
+            if (client.player != null && openCustomScreenKey.isPressed())
                 client.setScreen(new RSTScr(MinecraftClient.getInstance().currentScreen, getBoolean("FirstUse", true)));
+
+            BaritoneControlChecker.lookFlag = false;
         });
         // 本命令用于进入主菜单GUI(也可以通过上方按键进入)
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(ClientCommandManager.literal("RSTAutoElytraMenu").executes(context -> {
@@ -92,6 +100,7 @@ public class RustElytraClient implements ClientModInitializer {
         })));
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(ClientCommandManager.literal("RSTDebug-IDLE").executes(context -> {
             ModStatus = ModStatuses.idle;
+            TrajectoryRenderer.path.clear();
             return 1;
         })));
         // 命令开启飞行，不推荐，优先使用GUI
