@@ -74,12 +74,15 @@ public class TrajectoryRenderer {
             Vec3d start = path.get(i);
             Vec3d end = path.get(i + 1);
 
-            // 每一根线段需要两个顶点
+            // 起点
             lineBuffer.vertex(matrix, (float)(start.x - cameraPos.x), (float)(start.y - cameraPos.y), (float)(start.z - cameraPos.z))
-                    .color(0f, 1f, 1f, 1f); // 亮青色
+                    .color(0f, 1f, 1f, 1f)
+                    .normal(1f, 1f, 1f);
 
+            // 终点
             lineBuffer.vertex(matrix, (float)(end.x - cameraPos.x), (float)(end.y - cameraPos.y), (float)(end.z - cameraPos.z))
-                    .color(0f, 1f, 1f, 1f);
+                    .color(0f, 1f, 1f, 1f)
+                    .normal(1f, 1f, 1f);
         }
 
     }
