@@ -148,13 +148,13 @@ public class RSTScr extends Screen {
     @Override
     public void render(@NotNull DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
-        context.drawTextWithShadow(textRenderer, "欢迎使用RSTAutoElytraMod", width / 3 * 2, 20, 16777215);
+        context.drawTextWithShadow(textRenderer, "欢迎使用RSTAutoElytraMod", width / 3 * 2, 20, 0xFFFFFFFF);
         // 渲染提示信息
         if (firstUse) {
-            context.drawTextWithShadow(textRenderer, "若您是第一次使用RSTAutoElytraMod，请务必仔细阅读本指南", width / 4, height / 10, 0xFF0000);
-            context.drawTextWithShadow(textRenderer, "否则可能造成物资损失或存档损坏等严重后果！", width / 4, height / 10 + 15, 0xFFFFFF);
+            context.drawTextWithShadow(textRenderer, "若您是第一次使用RSTAutoElytraMod，请务必仔细阅读本指南", width / 4, height / 10, 0xFFFF0000);
+            context.drawTextWithShadow(textRenderer, "否则可能造成物资损失或存档损坏等严重后果！", width / 4, height / 10 + 15, 0xFFFFFFFF);
         } else if (ModStatus != ModStatuses.idle) {
-            context.drawTextWithShadow(textRenderer, "正在飞行中，若要更改设置请先取消飞行。", width / 4, height / 10, 0xFF0000);
+            context.drawTextWithShadow(textRenderer, "正在飞行中，若要更改设置请先取消飞行。", width / 4, height / 10, 0xFFFF0000);
 
         }
     }
@@ -452,8 +452,8 @@ public class RSTScr extends Screen {
         @Override
         public void render(@NotNull DrawContext context, int mouseX, int mouseY, float delta) {
             super.render(context, mouseX, mouseY, delta);
-            context.drawCenteredTextWithShadow(textRenderer, "您正在修改高级设置!", width / 2, height / 4, 16777215);
-            context.drawCenteredTextWithShadow(textRenderer, "这可能导致Mod稳定性下降或出现意外事故!!!", width / 2, height / 4 + 30, 0xFF0000);
+            context.drawCenteredTextWithShadow(textRenderer, "您正在修改高级设置!", width / 2, height / 4, 0xFFFFFFFF);
+            context.drawCenteredTextWithShadow(textRenderer, "这可能导致Mod稳定性下降或出现意外事故!!!", width / 2, height / 4 + 30, 0xFFFF0000);
         }
     }
 }
