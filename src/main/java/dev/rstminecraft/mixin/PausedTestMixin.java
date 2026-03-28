@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 @Mixin(targets = {"baritone.command.defaults.ExecutionControlCommands", "baritone.al"}, remap = false)
 public class PausedTestMixin {
     @Inject(method = "<init>", at = @At("RETURN"), locals = LocalCapture.CAPTURE_FAILSOFT, require = 0)
-    private void captureFirstBooleanArray(@Coerce Object a, CallbackInfo ci, @Local(ordinal = 0) boolean[] firstBoolArray) {
+    private void captureFirstBooleanArray(@Coerce Object par1, CallbackInfo ci, @Local(ordinal = 0) boolean[] firstBoolArray) {
         RustElytraClient.paused = firstBoolArray;
         RustElytraClient.isPausedMixinSuccess = true;
     }
