@@ -42,7 +42,6 @@ public class NoBaritone extends Screen {
 
     @Override
     public void render(@NotNull DrawContext context, int mouseX, int mouseY, float delta) {
-        this.renderBackground(context, mouseX, mouseY, delta);
         super.render(context, mouseX, mouseY, delta);
         switch (reason) {
             case NoModId -> {
