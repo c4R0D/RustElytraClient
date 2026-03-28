@@ -11,14 +11,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 
 @Pseudo
-@Mixin(value = baritone.behavior.LookBehavior.class, remap = false)
+@Mixin(targets = {"baritone.behavior.LookBehavior", "baritone.f"}, remap = false)
 public class BaritoneUpdateTarget {
-    @Inject(method = "updateTarget", at = @At("HEAD"),require = 0)
+    @Inject(method = "updateTarget", at = @At("HEAD"), require = 0)
     private void updateTarget(CallbackInfo ci) {
         BaritoneControlChecker.lookFlag = true;
     }
 
-    @Inject(method = "<init>", at = @At("TAIL"),require = 0)
+    @Inject(method = "<init>", at = @At("TAIL"), require = 0)
     private void init(CallbackInfo ci) {
         RustElytraClient.isLookMixinSuccess = true;
     }

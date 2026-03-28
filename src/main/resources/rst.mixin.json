@@ -5,9 +5,7 @@
   "mixins": [
     "BaritoneCheckMixin",
     "BaritoneUpdateTarget",
-    "BaritoneUpdateTarget2",
-    "PausedTestMixin",
-    "PausedTestMixin2"
+    "PausedTestMixin"
   ],
   "priority": 10,
   "plugin": "dev.rstminecraft.mixin.RstMixinPlugin",
