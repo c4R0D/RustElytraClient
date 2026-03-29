@@ -11,7 +11,7 @@ import java.util.Set;
 public class RstMixinPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        if (mixinClassName.equals("dev.rstminecraft.mixin.BaritoneUpdateTarget2") || mixinClassName.equals("dev.rstminecraft.mixin.PausedTestMixin2")) {
+        if (mixinClassName.equals("dev.rstminecraft.mixin.BaritoneUpdateTarget") || mixinClassName.equals("dev.rstminecraft.mixin.PausedTestMixin")) {
             try {
                 Class<?> clazz = Class.forName(targetClassName, false,
                         Thread.currentThread().getContextClassLoader());
