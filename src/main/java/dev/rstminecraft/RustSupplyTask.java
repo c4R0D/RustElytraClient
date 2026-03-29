@@ -100,16 +100,17 @@ public class RustSupplyTask {
         if (client.player == null || client.world == null || client.interactionManager == null)
             throw new TaskThread.TaskException("重要变量为null");
         List<BlockPos> fire = new ArrayList<>();
-        int radius = 3;
-        for (int i = -radius; i <= radius; i++) {
-            for (int j = -radius; j <= radius; j++) {
-                for (int k = -radius; k <= radius; k++) {
-                    BlockPos target = client.player.getBlockPos().add(i, j, k);
-                    if (RunAsMainThread(() -> client.world.getBlockState(target).getBlock() == Blocks.FIRE))
-                        fire.add(target);
+        RunAsMainThread(() -> {
+            int radius = 3;
+            for (int i = -radius; i <= radius; i++) {
+                for (int j = -radius; j <= radius; j++) {
+                    for (int k = -radius; k <= radius; k++) {
+                        BlockPos target = client.player.getBlockPos().add(i, j, k);
+                        if (client.world.getBlockState(target).getBlock() == Blocks.FIRE) fire.add(target);
+                    }
                 }
             }
-        }
+        });
         for (BlockPos bp : fire) {
             RunAsMainThread(() -> {
                 lookAt(client.player, Vec3d.ofCenter(bp));
@@ -153,13 +154,13 @@ public class RustSupplyTask {
             // 整理物品栏
             ScreenHandler handler2 = handled2.getScreenHandler();
 
-            for(int i = 36;i<45;i++){
+            for (int i = 36; i < 45; i++) {
                 Item item = handler2.getSlot(i).getStack().getItem();
-                if(item != Items.NETHERITE_PICKAXE && item != Items.DIAMOND_PICKAXE && item != Items.NETHERITE_SWORD && item != Items.DIAMOND_SWORD && item != Items.ENDER_CHEST && item != Food && item != Items.TOTEM_OF_UNDYING)
+                if (item != Items.NETHERITE_PICKAXE && item != Items.DIAMOND_PICKAXE && item != Items.NETHERITE_SWORD && item != Items.DIAMOND_SWORD && item != Items.ENDER_CHEST && item != Food && item != Items.TOTEM_OF_UNDYING)
                     continue;
-                for(int j = 9;j < 36;j++){
+                for (int j = 9; j < 36; j++) {
                     Item item2 = handler2.getSlot(j).getStack().getItem();
-                    if(item2 != Items.NETHERITE_PICKAXE && item2 != Items.DIAMOND_PICKAXE && item2 != Items.NETHERITE_SWORD && item2 != Items.DIAMOND_SWORD && item2 != Items.ENDER_CHEST && item2 != Food && item2 != Items.TOTEM_OF_UNDYING){
+                    if (item2 != Items.NETHERITE_PICKAXE && item2 != Items.DIAMOND_PICKAXE && item2 != Items.NETHERITE_SWORD && item2 != Items.DIAMOND_SWORD && item2 != Items.ENDER_CHEST && item2 != Food && item2 != Items.TOTEM_OF_UNDYING) {
                         client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
                         client.interactionManager.clickSlot(handler2.syncId, j, 0, SlotActionType.PICKUP, player);
                         client.interactionManager.clickSlot(handler2.syncId, i, 0, SlotActionType.PICKUP, player);
@@ -493,7 +494,7 @@ public class RustSupplyTask {
                             }
                         }
                         data[i][2] = ShulkerInnerFinder(Food, inner);
-                        data[i][3] = ShulkerInnerFinder(Items.TOTEM_OF_UNDYING,inner);
+                        data[i][3] = ShulkerInnerFinder(Items.TOTEM_OF_UNDYING, inner);
 
                     } else {
                         sb.append("  (shulker is null...warning...)").append("\n");
@@ -635,14 +636,14 @@ public class RustSupplyTask {
                     continue;
                 }
 
-                if(stack.getItem() == Items.TOTEM_OF_UNDYING){
+                if (stack.getItem() == Items.TOTEM_OF_UNDYING) {
                     if (client.player.getInventory().getStack(3).getItem() == Items.TOTEM_OF_UNDYING) {
                         if (client.player.getInventory().getStack(4).getItem() == Items.TOTEM_OF_UNDYING) continue;
-                        client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP,client. player);
+                        client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
                         client.interactionManager.clickSlot(handler.syncId, 58, 0, SlotActionType.PICKUP, client.player);
                         client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
                     } else {
-                        client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP,client. player);
+                        client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
                         client.interactionManager.clickSlot(handler.syncId, 57, 0, SlotActionType.PICKUP, client.player);
                         client.interactionManager.clickSlot(handler.syncId, i, 0, SlotActionType.PICKUP, client.player);
                     }
@@ -960,8 +961,7 @@ public class RustSupplyTask {
                     max = ShulkerData[i][2];
                 }
             }
-            if (slot2 == -1 || max < 2)
-                MsgSender.SendMsg(client.player, "无可用图腾!", MsgLevel.warning);
+            if (slot2 == -1 || max < 2) MsgSender.SendMsg(client.player, "无可用图腾!", MsgLevel.warning);
             else ShulkerList.add(slot2);
         }
         TaskThread.delay(1);
