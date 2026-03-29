@@ -100,16 +100,17 @@ public class RustSupplyTask {
         if (client.player == null || client.world == null || client.interactionManager == null)
             throw new TaskThread.TaskException("重要变量为null");
         List<BlockPos> fire = new ArrayList<>();
-        int radius = 3;
-        for (int i = -radius; i <= radius; i++) {
-            for (int j = -radius; j <= radius; j++) {
-                for (int k = -radius; k <= radius; k++) {
-                    BlockPos target = client.player.getBlockPos().add(i, j, k);
-                    if (RunAsMainThread(() -> client.world.getBlockState(target).getBlock() == Blocks.FIRE))
-                        fire.add(target);
+        RunAsMainThread(() -> {
+            int radius = 3;
+            for (int i = -radius; i <= radius; i++) {
+                for (int j = -radius; j <= radius; j++) {
+                    for (int k = -radius; k <= radius; k++) {
+                        BlockPos target = client.player.getBlockPos().add(i, j, k);
+                        if (client.world.getBlockState(target).getBlock() == Blocks.FIRE) fire.add(target);
+                    }
                 }
             }
-        }
+        });
         for (BlockPos bp : fire) {
             RunAsMainThread(() -> {
                 lookAt(client.player, Vec3d.ofCenter(bp));
