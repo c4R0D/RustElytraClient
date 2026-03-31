@@ -60,6 +60,10 @@ dependencies {
 }
 
 
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << "-Xlint:none"
+}
+
 processResources {
     inputs.property "version", project.version
 
