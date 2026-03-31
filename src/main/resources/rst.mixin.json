@@ -7,7 +7,6 @@
     "BaritoneUpdateTarget",
     "PausedTestMixin"
   ],
-  "priority": 10,
   "plugin": "dev.rstminecraft.mixin.RstMixinPlugin",
   "injectors": {
     "defaultRequire": 1

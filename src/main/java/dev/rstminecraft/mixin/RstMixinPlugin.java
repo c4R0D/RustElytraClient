@@ -11,7 +11,7 @@ import java.util.Set;
 public class RstMixinPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        if (mixinClassName.equals("dev.rstminecraft.mixin.BaritoneUpdateTarget") || mixinClassName.equals("dev.rstminecraft.mixin.PausedTestMixin")) {
+        if (targetClassName.contains("baritone.al") || targetClassName.contains("baritone.f")) {
             try {
                 Class<?> clazz = Class.forName(targetClassName, false,
                         Thread.currentThread().getContextClassLoader());
@@ -19,15 +19,33 @@ public class RstMixinPlugin implements IMixinConfigPlugin {
             } catch (ClassNotFoundException e) {
                 return false;
             }
-
         }
         return true;
     }
 
-    @Override public void onLoad(String mixinPackage) {}
-    @Override public @Nullable String getRefMapperConfig() { return null; }
-    @Override public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {}
-    @Override public @Nullable List<String> getMixins() { return null; }
-    @Override public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
-    @Override public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
+    @Override
+    public void onLoad(String mixinPackage) {
+    }
+
+    @Override
+    public @Nullable String getRefMapperConfig() {
+        return null;
+    }
+
+    @Override
+    public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {
+    }
+
+    @Override
+    public @Nullable List<String> getMixins() {
+        return null;
+    }
+
+    @Override
+    public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+    }
+
+    @Override
+    public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+    }
 }
