@@ -3,20 +3,30 @@ package dev.rstminecraft.mixin;
 
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.ClassNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
+import org.spongepowered.asm.mixin.transformer.ClassInfo;
+
 import java.util.List;
 import java.util.Set;
 
 public class RstMixinPlugin implements IMixinConfigPlugin {
+
+    public static final Logger MODLOGGER = LoggerFactory.getLogger("rust-RstMixinPlugin-client");
+
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        if (targetClassName.contains("baritone.al") || targetClassName.contains("baritone.f")) {
-            try {
-                Class<?> clazz = Class.forName(targetClassName, false,
-                        Thread.currentThread().getContextClassLoader());
-                return !clazz.isInterface();
-            } catch (ClassNotFoundException e) {
+        MODLOGGER.info("try mixin to {} from {}", targetClassName, mixinClassName);
+        if (mixinClassName.contains("dev.rstminecraft.mixin.BaritoneUpdateTarget") || mixinClassName.contains("dev.rstminecraft.mixin.PausedTestMixin")) {
+            ClassInfo info = ClassInfo.forName(targetClassName);
+            if (info == null) {
+                MODLOGGER.error("mixin to {} from {} failed!!!,Class Not Found!!!", targetClassName, mixinClassName);
+                return false;
+            }
+            if (info.isInterface()) {
+                MODLOGGER.error("mixin to {} from {} failed!!!,Is Interface!!!", targetClassName, mixinClassName);
                 return false;
             }
         }
